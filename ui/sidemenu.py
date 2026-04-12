@@ -1,7 +1,15 @@
 from PySide6.QtCore import Qt, QAbstractListModel, QSize, QRect
 from PySide6.QtGui import QPainter, QPixmap, QFont, QColor
-from PySide6.QtWidgets import (QMdiSubWindow, QWidget, QGraphicsDropShadowEffect, QStyleOption, QStyle, QVBoxLayout, QListView, QFrame,
-                                QStyledItemDelegate, QLabel)
+from PySide6.QtWidgets import (QMdiSubWindow, QWidget, QGraphicsDropShadowEffect,
+                               QStyleOption, QStyle, QVBoxLayout, QListView,
+                               QFrame, QStyledItemDelegate, QLabel)
+
+
+def make_divider():
+    line = QFrame()
+    line.setFrameShape(QFrame.HLine)
+    line.setStyleSheet("color: #D3D1C7;")
+    return line
 
 
 class Delegate(QStyledItemDelegate):
@@ -51,13 +59,7 @@ class Model(QAbstractListModel):
     def __init__(self, data=None):
         super(Model, self).__init__()
         if data is None:
-            data = [
-                ("DashBoard", "res/img/icons/group.png"),
-                ("Nova Peça", "res/img/icons/megaphone.png"),
-                ("Histórico", "res/img/icons/contacts.png"),
-                ("Filamentos", "res/img/icons/calls.png"),
-                ("Relatórios", "res/img/icons/settings.png"),
-            ]
+                pass
         self._data = data
 
     def rowCount(self, index):
@@ -161,10 +163,25 @@ class SideMenuWidget(QWidget):
         self.listview = ListView()
         self.listview.setFrameStyle(QFrame.NoFrame)
         self.listview.setFocusPolicy(Qt.NoFocus)
-        self.listview.setModel(Model())
+        self.listview.setModel(
+            Model(data=[("DashBoard", "res/img/icons/dashboard.png"),
+                        ("Nova Peça", "res/img/icons/3dpiece.png"),
+                        ("Histórico", "res/img/icons/history.png")]))
         self.listview.setItemDelegate(Delegate())
         self.layout.addWidget(self.listview)
-
+        self.layout.addWidget(make_divider())
+        self.stock_listview = ListView()
+        self.stock_listview.setFrameStyle(QFrame.NoFrame)
+        self.stock_listview.setFocusPolicy(Qt.NoFocus)
+        self.stock_listview.setModel(
+            Model(data=[
+                ("Filamentos", "res/img/icons/filament.png"),
+                ("Relatórios", "res/img/icons/report.png"),
+                ("Configurações", "res/img/icons/settings.png"),
+            ])
+        )
+        self.stock_listview.setItemDelegate(Delegate())
+        self.layout.addWidget(self.stock_listview)
         # LABELS
         self.labels = QWidget()
         self.labels.setFixedHeight(60)
