@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt, QPropertyAnimation, QSize
 from PySide6.QtGui import QPainter
-from PySide6.QtWidgets import QMdiSubWindow, QWidget, QHBoxLayout, QPushButton, QStyleOption, QStyle
+from PySide6.QtWidgets import QMdiSubWindow, QWidget, QHBoxLayout, QPushButton, \
+    QStyleOption, QStyle, QLabel
 
 from ui.hamburgerbutton import HamburgerButton
 
@@ -17,9 +18,16 @@ class WidgetContent(QWidget):
         # self.menu_btn = QPushButton("Menu")
         self.menu_btn = HamburgerButton(self)
         self.menu_btn.move(8, 8)  # canto superior esquerdo
-        self.menu_btn.raise_()
+
         self.menu_btn.clicked.connect(self.show_menu)
         #self.layout.addWidget(self.menu_btn)
+        # self.piece_name_lbl = QLabel(f'Nova Peça - precificação')
+        # self.cancel_btn = QPushButton('Cancelar')
+        # self.save_btn = QPushButton('Salvar')
+        # self.layout.addWidget(self.piece_name_lbl)
+        # self.layout.addWidget(self.cancel_btn)
+        # self.layout.addWidget(self.save_btn)
+        self.menu_btn.raise_()
 
     def show_menu(self):
         self.animation = QPropertyAnimation(self.mdi.menu, b"size")

@@ -1,8 +1,12 @@
 from PySide6.QtCore import Qt, QAbstractListModel, QSize, QRect
 from PySide6.QtGui import QPainter, QPixmap, QFont, QColor
-from PySide6.QtWidgets import (QMdiSubWindow, QWidget, QGraphicsDropShadowEffect,
-                               QStyleOption, QStyle, QVBoxLayout, QListView,
-                               QFrame, QStyledItemDelegate, QLabel)
+from PySide6.QtWidgets import (QMdiSubWindow, QWidget,
+                               QGraphicsDropShadowEffect, QStyleOption, QStyle,
+                               QVBoxLayout, QListView, QFrame,
+                               QStyledItemDelegate, QLabel)
+
+
+ITEM_HEIGHT = 45
 
 
 def make_divider():
@@ -12,13 +16,22 @@ def make_divider():
     return line
 
 
+def make_section_label(text):
+    label = QLabel(text.upper())
+    label.setStyleSheet("""
+        color: #888780;
+        font-size: 10px;
+        letter-spacing: 1px;
+        padding: 12px 16px 4px 16px;
+    """)
+    label.setFixedHeight(30)
+    return label
+
+
 class Delegate(QStyledItemDelegate):
     def __init__(self, height=None):
         super(Delegate, self).__init__()
-        if height is None:
-            self._height = 45
-        else:
-            self._height = height
+        self._height = height if height is not None else ITEM_HEIGHT
 
     def paint(self, painter, option, index):
         super(Delegate, self).paint(painter, option, index)
@@ -36,17 +49,29 @@ class Delegate(QStyledItemDelegate):
         # DRAW ICON
         icon = QPixmap()
         icon.load(index.data()[1])
-        icon = icon.scaled(24, 24, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        icon = icon.scaled(
+            24, 24, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+        )
 
         left = 24 # margin left
-        icon_pos = QRect(left, ((self._height - icon.height()) / 2) + option.rect.y(), icon.width(), icon.height())
+        icon_pos = QRect(
+            left,
+            ((self._height - icon.height()) / 2) + option.rect.y(),
+            icon.width(),
+            icon.height()
+        )
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         painter.drawPixmap(icon_pos, icon)
 
         # DRAW TEXT
         font = QFont("Roboto Black", 12)
-        text_pos = QRect((left * 2) + icon.width(), option.rect.y(), option.rect.width(), option.rect.height())
+        text_pos = QRect(
+            (left * 2) + icon.width(),
+            option.rect.y(),
+            option.rect.width(),
+            option.rect.height()
+        )
         painter.setFont(font)
         painter.setPen(Qt.black)
         painter.drawText(text_pos, Qt.AlignVCenter, index.data()[0])
@@ -71,9 +96,13 @@ class Model(QAbstractListModel):
 
 
 class ListView(QListView):
-    def __init__(self):
+    def __init__(self, item_count):
         super(ListView, self).__init__()
         self.setMouseTracking(True)
+        self.setFixedHeight(item_count * ITEM_HEIGHT)
+
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
     def mouseMoveEvent(self, event):
         # CHANGE CURSOR HOVERING
@@ -119,7 +148,9 @@ class Profile(QWidget):
         # DRAW PROFILE IMAGE 
         image = QPixmap()
         image.load("res/img/icons/user.png")
-        image = image.scaled(54, 54, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        image = image.scaled(
+            54, 54, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+        )
 
         self.avatar = QLabel(self)
         self.avatar.setCursor(Qt.PointingHandCursor)
@@ -144,7 +175,12 @@ class Profile(QWidget):
 
         image = QPixmap()
         image.load("res/img/back.jpg")
-        image = image.scaled(self.width(), self.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        image = image.scaled(
+            self.width(),
+            self.height(),
+            Qt.IgnoreAspectRatio,
+            Qt.SmoothTransformation
+        )
         p.drawPixmap(self.rect(), image)
 
 
@@ -153,24 +189,27 @@ class SideMenuWidget(QWidget):
         super(SideMenuWidget, self).__init__()
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(12)
+        self.layout.setSpacing(0)
         self.setLayout(self.layout)
 
         # PROFILE
         self.layout.addWidget(Profile())
-
+        self.layout.addWidget(make_section_label("Principal"))
         # BUTTONS
-        self.listview = ListView()
+        self.listview = ListView(item_count=3)
         self.listview.setFrameStyle(QFrame.NoFrame)
         self.listview.setFocusPolicy(Qt.NoFocus)
         self.listview.setModel(
             Model(data=[("DashBoard", "res/img/icons/dashboard.png"),
                         ("Nova Peça", "res/img/icons/3dpiece.png"),
-                        ("Histórico", "res/img/icons/history.png")]))
+                        ("Histórico", "res/img/icons/history.png")]
+                  )
+        )
         self.listview.setItemDelegate(Delegate())
         self.layout.addWidget(self.listview)
         self.layout.addWidget(make_divider())
-        self.stock_listview = ListView()
+        self.layout.addWidget(make_section_label("Estoque"))
+        self.stock_listview = ListView(item_count=3)
         self.stock_listview.setFrameStyle(QFrame.NoFrame)
         self.stock_listview.setFocusPolicy(Qt.NoFocus)
         self.stock_listview.setModel(
@@ -182,33 +221,54 @@ class SideMenuWidget(QWidget):
         )
         self.stock_listview.setItemDelegate(Delegate())
         self.layout.addWidget(self.stock_listview)
+        self.layout.addWidget(make_divider())
         # LABELS
         self.labels = QWidget()
         self.labels.setFixedHeight(60)
         self.layout.addWidget(self.labels)
 
+        self.layout.addStretch()
+
         _margins = 16 # left margin
 
-        self.app_name = LinkLabel(self.labels, "color: rgba(0, 0, 0, 80%)", "color: rgba(0, 0, 0, 60%)")
+        self.app_name = LinkLabel(
+            self.labels,
+            "color: rgba(0, 0, 0, 80%)",
+            "color: rgba(0, 0, 0, 60%)"
+        )
         self.app_name.setText("Calculo do Custo Impressão 3D")
         self.app_name.setFont(QFont("Roboto Light", 12))
         self.app_name.move(self.labels.x() + _margins, self.labels.y())
 
-        self.app_ver = LinkLabel(self.labels, "color: rgba(0, 0, 0, 60%)", "color: rgba(0, 0, 0, 60%)")
+        self.app_ver = LinkLabel(
+            self.labels,
+            "color: rgba(0, 0, 0, 60%)",
+            "color: rgba(0, 0, 0, 60%)"
+        )
         self.app_ver.setText("Versão 1.0.0")
         self.app_ver.setFont(QFont("Roboto Light", 11))
-        self.app_ver.move(self.labels.x() + _margins, self.labels.y() + _margins * 2)
+        self.app_ver.move(
+            self.labels.x() + _margins, self.labels.y() + _margins * 2
+        )
 
         self.lbl = QLabel(self.labels)
         self.lbl.setText("-")
         self.lbl.setStyleSheet("color: rgba(0, 0, 0, 60%)")
         self.lbl.setFont(QFont("Roboto Light", 11))
-        self.lbl.move(self.labels.x() + _margins * 7, self.labels.y() + _margins * 2)
+        self.lbl.move(
+            self.labels.x() + _margins * 7, self.labels.y() + _margins * 2
+        )
 
-        self.app_about = LinkLabel(self.labels, "color: rgba(0, 0, 0, 60%)", "color: rgba(0, 0, 0, 60%)")
+        self.app_about = LinkLabel(
+            self.labels,
+            "color: rgba(0, 0, 0, 60%)",
+            "color: rgba(0, 0, 0, 60%)"
+        )
         self.app_about.setText("Sobre o programa")
         self.app_about.setFont(QFont("Roboto Light", 11))
-        self.app_about.move(self.labels.x() + _margins * 8, self.labels.y() + _margins * 2)
+        self.app_about.move(
+            self.labels.x() + _margins * 8, self.labels.y() + _margins * 2
+        )
 
         self.setStyleSheet("background: white;")
 
@@ -231,4 +291,3 @@ class SideMenu(QMdiSubWindow):
         self.widget = SideMenuWidget()
         self.setWidget(self.widget)
         self.hide()
-
