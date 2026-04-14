@@ -11,7 +11,7 @@ class ClickableLabel(QLabel):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            print("Frame clicked!")
+            #print("Frame clicked!")
             self.clicked.emit()
             # Always call the parent implementation to ensure standard behavior
         super().mousePressEvent(event)

@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, QPropertyAnimation, QSize
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QMdiSubWindow, QWidget, QHBoxLayout, QPushButton, \
     QStyleOption, QStyle, QLabel, QVBoxLayout, QScrollArea, QFrame, QLineEdit, \
-    QComboBox, QProgressBar
+    QComboBox, QProgressBar, QMessageBox
 
 from ui.clicklable import ColoredDot, ClickableLabel
 from ui.hamburgerbutton import HamburgerButton
@@ -233,7 +233,7 @@ class Panel(QWidget):
 class PiecePanel(Panel):
     def __init__(self):
         super().__init__("Dados da peça", badge_text="Em edição")
-
+        self.dot_count = 0
         # nome da peça (linha inteira)
         self.add(form_label("Nome da peça"))
         self.name_input = styled_input("Ex: Suporte de parede articulado")
@@ -279,30 +279,31 @@ class PiecePanel(Panel):
         self.add_layout(row2)
 
         # cores utilizadas
-        self.add(form_label("Cores utilizadas"))
-        colors_row = QHBoxLayout()
-        colors_row.setSpacing(8)
-        for color in ["#1565C0", "#E53935", "#F5F5F5"]:
-            dot = ColoredDot()
-            dot.setFixedSize(32, 32)
-            dot.setStyleSheet(
-                f"background:{color};"
-                f" border-radius:9px; "
-                f"border:0.5px solid #D3D1C7;")
-            dot.clicked.connect(dot.handle_data)
-            colors_row.addWidget(dot)
-        add_dot = ClickableLabel("+")
-        add_dot.setFixedSize(32, 32)
-        add_dot.setAlignment(Qt.AlignCenter)
-        add_dot.setStyleSheet(
+        self.add_dot = ClickableLabel("+")
+        self.add_dot.setFixedSize(32, 32)
+        self.add_dot.setAlignment(Qt.AlignCenter)
+        self.add_dot.setStyleSheet(
             "border:0.5px dashed #B4B2A9;"
             " border-radius:9px; "
             "font-size:10px; "
             "color:#888780;")
-        add_dot.clicked.connect(lambda : print())
-        colors_row.addWidget(add_dot)
-        colors_row.addStretch()
-        self.add_layout(colors_row)
+        self.add_dot.clicked.connect(self._on_add_dot_clicked)
+
+        self.add(form_label("Cores utilizadas"))
+        self.colors_row1 = QHBoxLayout()
+        self.colors_row1.setSpacing(8)
+        self.colors_row1.addWidget(self.add_dot)
+        self.colors_row1.addStretch()
+        self.add_layout(self.colors_row1)
+
+        self.colors_row2 = QHBoxLayout()
+        self.colors_row2.setSpacing(8)
+        self.colors_row2.addStretch()
+        self.add_layout(self.colors_row2)
+
+        self.colors = ["#1565C0", "#E53935", "#F5F5F5"]
+        for color in self.colors:
+            self._insert_dot(color)
 
         self.add(make_divider())
 
@@ -312,6 +313,43 @@ class PiecePanel(Panel):
         self.add(self.obs_input)
         self.badge_text = "Salvo"
         self.body_layout.addStretch()
+
+    def _make_dot(self, color: str):
+        dot = ColoredDot()
+        dot.setFixedSize(32, 32)
+        dot.handle_data(color)
+        dot.clicked.connect(dot.handle_data)
+        return dot
+
+    def _insert_dot(self, color: str):
+        """Insere um dot na linha correta e move o add_dot se necessário."""
+        if self.dot_count >= 16:
+            QMessageBox.warning(self, "Limite atingido",
+                                "Número máximo de 16 cores alcançado!")
+            return
+
+        dot = self._make_dot(color)
+        self.dot_count += 1
+
+        if self.dot_count <= 8:
+            # linha 1: insere ANTES do add_dot (que está na posição dot_count-1)
+            idx = self.colors_row1.indexOf(self.add_dot)
+            self.colors_row1.insertWidget(idx, dot)
+
+            # quando a linha 1 encheu, move o add_dot para o início da linha 2
+            if self.dot_count == 8:
+                self.colors_row1.removeWidget(self.add_dot)
+                self.colors_row2.insertWidget(0, self.add_dot)
+        else:
+            # linha 2: insere ANTES do add_dot
+            idx = self.colors_row2.indexOf(self.add_dot)
+            self.colors_row2.insertWidget(idx, dot)
+
+    def _on_add_dot_clicked(self):
+        from PySide6.QtWidgets import QColorDialog
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self._insert_dot(color.name())
 
 
 # ── painel direito superior: filamento ───────────────────────────────────────
@@ -398,8 +436,12 @@ class CostPanel(Panel):
             row.addWidget(val)
             return row
 
-        self.add_layout(cost_row("Material (48g × R$0,09/g)", "R$ 4,32"))
-        self.add_layout(cost_row("Energia (3.3h × 0.3kW × R$1,18)", "R$ 1,17"))
+        self.add_layout(
+            cost_row("Material (48g × R$0,09/g)", "R$ 4,32")
+        )
+        self.add_layout(
+            cost_row("Energia (3.3h × 0.3kW × R$1,18)", "R$ 1,17")
+        )
         self.add_layout(cost_row("Mão de obra", "R$ 2,00"))
         self.add(make_divider())
         self.add_layout(cost_row("Custo total", "R$ 7,49"))
