@@ -1,6 +1,7 @@
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QPen, QColor
-from PySide6.QtCore import Qt, QPropertyAnimation, QRect, Property, QEasingCurve
+from PySide6.QtWidgets import QPushButton
+
 
 class HamburgerButton(QPushButton):
     def __init__(self, parent=None):

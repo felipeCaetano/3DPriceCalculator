@@ -1,9 +1,10 @@
 import sys
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QMdiArea, QWidget
-from ui.sidemenu import SideMenu
-from ui.overlay import Overlay
+from PySide6.QtWidgets import QApplication, QMainWindow, QMdiArea
+
 from ui.content import Content
+from ui.overlay import Overlay
+from ui.sidemenu import SideMenu
 
 
 class MdiArea(QMdiArea):

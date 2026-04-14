@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (QMdiSubWindow, QWidget,
                                QVBoxLayout, QListView, QFrame,
                                QStyledItemDelegate, QLabel)
 
-
 ITEM_HEIGHT = 45
 
 
@@ -49,29 +48,21 @@ class Delegate(QStyledItemDelegate):
         # DRAW ICON
         icon = QPixmap()
         icon.load(index.data()[1])
-        icon = icon.scaled(
-            24, 24, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
-        )
+        icon = icon.scaled(24, 24, Qt.IgnoreAspectRatio,
+            Qt.SmoothTransformation)
 
-        left = 24 # margin left
-        icon_pos = QRect(
-            left,
+        left = 24  # margin left
+        icon_pos = QRect(left,
             ((self._height - icon.height()) / 2) + option.rect.y(),
-            icon.width(),
-            icon.height()
-        )
+            icon.width(), icon.height())
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         painter.drawPixmap(icon_pos, icon)
 
         # DRAW TEXT
         font = QFont("Roboto Black", 12)
-        text_pos = QRect(
-            (left * 2) + icon.width(),
-            option.rect.y(),
-            option.rect.width(),
-            option.rect.height()
-        )
+        text_pos = QRect((left * 2) + icon.width(), option.rect.y(),
+            option.rect.width(), option.rect.height())
         painter.setFont(font)
         painter.setPen(Qt.black)
         painter.drawText(text_pos, Qt.AlignVCenter, index.data()[0])
@@ -84,7 +75,7 @@ class Model(QAbstractListModel):
     def __init__(self, data=None):
         super(Model, self).__init__()
         if data is None:
-                pass
+            pass
         self._data = data
 
     def rowCount(self, index):
@@ -93,6 +84,7 @@ class Model(QAbstractListModel):
     def data(self, index, role=Qt.DisplayRole):
         if index.isValid() and role == Qt.DisplayRole:
             return self._data[index.row()]
+        return None
 
 
 class ListView(QListView):
@@ -103,7 +95,7 @@ class ListView(QListView):
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
+
     def mouseMoveEvent(self, event):
         # CHANGE CURSOR HOVERING
         if self.indexAt(event.pos()).row() >= 0:
@@ -135,30 +127,29 @@ class LinkLabel(QLabel):
 class Profile(QWidget):
     def __init__(self, height=None):
         super(Profile, self).__init__()
+        self.username = QLabel(self)
+        self.avatar = QLabel(self)
         if height is None:
             self.setFixedHeight(150)
         else:
             self.setFixedHeight(height)
-        self.paintAvatar()
+        self.paint_avatar()
 
-    def paintAvatar(self):
+    def paint_avatar(self):
         _margin = 16
         _margin_text = 24
 
         # DRAW PROFILE IMAGE 
         image = QPixmap()
         image.load("res/img/icons/user.png")
-        image = image.scaled(
-            54, 54, Qt.IgnoreAspectRatio, Qt.SmoothTransformation
-        )
+        image = image.scaled(54, 54, Qt.IgnoreAspectRatio,
+            Qt.SmoothTransformation)
 
-        self.avatar = QLabel(self)
         self.avatar.setCursor(Qt.PointingHandCursor)
         self.avatar.setAttribute(Qt.WA_TranslucentBackground)
         self.avatar.setPixmap(image)
         self.avatar.move(self.rect().x() + _margin, self.rect().y() + _margin)
 
-        self.username = QLabel(self)
         self.username.setStyleSheet("color: white;")
         self.username.setFont(QFont("Roboto Light", 14))
         self.username.setCursor(Qt.PointingHandCursor)
@@ -175,12 +166,8 @@ class Profile(QWidget):
 
         image = QPixmap()
         image.load("res/img/back.jpg")
-        image = image.scaled(
-            self.width(),
-            self.height(),
-            Qt.IgnoreAspectRatio,
-            Qt.SmoothTransformation
-        )
+        image = image.scaled(self.width(), self.height(), Qt.IgnoreAspectRatio,
+            Qt.SmoothTransformation)
         p.drawPixmap(self.rect(), image)
 
 
@@ -199,12 +186,10 @@ class SideMenuWidget(QWidget):
         self.listview = ListView(item_count=3)
         self.listview.setFrameStyle(QFrame.NoFrame)
         self.listview.setFocusPolicy(Qt.NoFocus)
-        self.listview.setModel(
-            Model(data=[("DashBoard", "res/img/icons/dashboard.png"),
-                        ("Nova Peça", "res/img/icons/3dpiece.png"),
-                        ("Histórico", "res/img/icons/history.png")]
-                  )
-        )
+        self.listview.setModel(Model(
+            data=[("DashBoard", "res/img/icons/dashboard.png"),
+                  ("Nova Peça", "res/img/icons/3dpiece.png"),
+                  ("Histórico", "res/img/icons/history.png")]))
         self.listview.setItemDelegate(Delegate())
         self.layout.addWidget(self.listview)
         self.layout.addWidget(make_divider())
@@ -212,13 +197,10 @@ class SideMenuWidget(QWidget):
         self.stock_listview = ListView(item_count=3)
         self.stock_listview.setFrameStyle(QFrame.NoFrame)
         self.stock_listview.setFocusPolicy(Qt.NoFocus)
-        self.stock_listview.setModel(
-            Model(data=[
-                ("Filamentos", "res/img/icons/filament.png"),
+        self.stock_listview.setModel(Model(
+            data=[("Filamentos", "res/img/icons/filament.png"),
                 ("Relatórios", "res/img/icons/report.png"),
-                ("Configurações", "res/img/icons/settings.png"),
-            ])
-        )
+                ("Configurações", "res/img/icons/settings.png"), ]))
         self.stock_listview.setItemDelegate(Delegate())
         self.layout.addWidget(self.stock_listview)
         self.layout.addWidget(make_divider())
@@ -229,46 +211,34 @@ class SideMenuWidget(QWidget):
 
         self.layout.addStretch()
 
-        _margins = 16 # left margin
+        _margins = 16  # left margin
 
-        self.app_name = LinkLabel(
-            self.labels,
-            "color: rgba(0, 0, 0, 80%)",
-            "color: rgba(0, 0, 0, 60%)"
-        )
+        self.app_name = LinkLabel(self.labels, "color: rgba(0, 0, 0, 80%)",
+            "color: rgba(0, 0, 0, 60%)")
         self.app_name.setText("Calculo do Custo Impressão 3D")
         self.app_name.setFont(QFont("Roboto Light", 12))
         self.app_name.move(self.labels.x() + _margins, self.labels.y())
 
-        self.app_ver = LinkLabel(
-            self.labels,
-            "color: rgba(0, 0, 0, 60%)",
-            "color: rgba(0, 0, 0, 60%)"
-        )
+        self.app_ver = LinkLabel(self.labels, "color: rgba(0, 0, 0, 60%)",
+            "color: rgba(0, 0, 0, 60%)")
         self.app_ver.setText("Versão 1.0.0")
         self.app_ver.setFont(QFont("Roboto Light", 11))
-        self.app_ver.move(
-            self.labels.x() + _margins, self.labels.y() + _margins * 2
-        )
+        self.app_ver.move(self.labels.x() + _margins,
+                          self.labels.y() + _margins * 2)
 
         self.lbl = QLabel(self.labels)
         self.lbl.setText("-")
         self.lbl.setStyleSheet("color: rgba(0, 0, 0, 60%)")
         self.lbl.setFont(QFont("Roboto Light", 11))
-        self.lbl.move(
-            self.labels.x() + _margins * 7, self.labels.y() + _margins * 2
-        )
+        self.lbl.move(self.labels.x() + _margins * 7,
+                      self.labels.y() + _margins * 2)
 
-        self.app_about = LinkLabel(
-            self.labels,
-            "color: rgba(0, 0, 0, 60%)",
-            "color: rgba(0, 0, 0, 60%)"
-        )
+        self.app_about = LinkLabel(self.labels, "color: rgba(0, 0, 0, 60%)",
+            "color: rgba(0, 0, 0, 60%)")
         self.app_about.setText("Sobre o programa")
         self.app_about.setFont(QFont("Roboto Light", 11))
-        self.app_about.move(
-            self.labels.x() + _margins * 8, self.labels.y() + _margins * 2
-        )
+        self.app_about.move(self.labels.x() + _margins * 8,
+                            self.labels.y() + _margins * 2)
 
         self.setStyleSheet("background: white;")
 
@@ -277,6 +247,7 @@ class SideMenuWidget(QWidget):
         opt.initFrom(self)
         p = QPainter(self)
         self.style().drawPrimitive(QStyle.PE_Widget, opt, p, self)
+
 
 class SideMenu(QMdiSubWindow):
     def __init__(self):

@@ -510,6 +510,7 @@ class MainContent(QWidget):
 class WidgetContent(QWidget):
     def __init__(self, mdi):
         super(WidgetContent, self).__init__()
+        self.animation = QPropertyAnimation(self.mdi.menu, b"size")
         self.mdi = mdi
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -534,7 +535,6 @@ class WidgetContent(QWidget):
         self.menu_btn.raise_()
 
     def show_menu(self):
-        self.animation = QPropertyAnimation(self.mdi.menu, b"size")
         self.animation.setDuration(150)
         if self.menu_btn.isChecked():
             self.animation.setStartValue(QSize(0, self.mdi.height()))
