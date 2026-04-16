@@ -1,9 +1,8 @@
-from PySide6.QtCore import Signal, Qt, Slot
-from PySide6.QtWidgets import QLabel, QFrame, QColorDialog
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtWidgets import QColorDialog, QFrame, QLabel
 
 
 class ClickableLabel(QLabel):
-    # Define a custom signal
     clicked = Signal()
 
     def __init__(self, text, parent=None):
@@ -11,14 +10,12 @@ class ClickableLabel(QLabel):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            #print("Frame clicked!")
             self.clicked.emit()
             # Always call the parent implementation to ensure standard behavior
         super().mousePressEvent(event)
 
 
 class ColoredDot(QFrame):
-    # Optional: Create a custom signal to use it like a QPushButton
     clicked = Signal(str)
 
     def __init__(self, parent=None):
@@ -31,7 +28,6 @@ class ColoredDot(QFrame):
             color = QColorDialog.getColor()
             if color.isValid():
                 self.clicked.emit(color.name())
-        # Always call the parent implementation to ensure standard behavior
         super().mousePressEvent(event)
 
     @Slot(str)

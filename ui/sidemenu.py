@@ -1,30 +1,12 @@
-from PySide6.QtCore import Qt, QAbstractListModel, QSize, QRect
-from PySide6.QtGui import QPainter, QPixmap, QFont, QColor
-from PySide6.QtWidgets import (QMdiSubWindow, QWidget,
-                               QGraphicsDropShadowEffect, QStyleOption, QStyle,
-                               QVBoxLayout, QListView, QFrame,
-                               QStyledItemDelegate, QLabel)
+from PySide6.QtCore import QAbstractListModel, QRect, QSize, Qt
+from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
+from PySide6.QtWidgets import (QFrame, QGraphicsDropShadowEffect, QLabel,
+                               QListView, QMdiSubWindow, QStyle, QStyleOption,
+                               QStyledItemDelegate, QVBoxLayout, QWidget)
+
+from ui.stylehelper import make_divider, make_section_label
 
 ITEM_HEIGHT = 45
-
-
-def make_divider():
-    line = QFrame()
-    line.setFrameShape(QFrame.HLine)
-    line.setStyleSheet("color: #D3D1C7;")
-    return line
-
-
-def make_section_label(text):
-    label = QLabel(text.upper())
-    label.setStyleSheet("""
-        color: #888780;
-        font-size: 10px;
-        letter-spacing: 1px;
-        padding: 12px 16px 4px 16px;
-    """)
-    label.setFixedHeight(30)
-    return label
 
 
 class Delegate(QStyledItemDelegate):
