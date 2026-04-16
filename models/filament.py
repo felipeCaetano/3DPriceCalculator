@@ -6,6 +6,7 @@ class FilamentData:
     tipo: str = "PLA"
     marca: str = "Polymaker"
     cor: str = "Azul royal"
+    cor_str: str = ""
     preco_kg: float = 89.90
     peso_bobina_g: float = 1000.0
     peso_usado_g: float = 380.0

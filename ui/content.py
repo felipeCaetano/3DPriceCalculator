@@ -1,9 +1,10 @@
+from typing import List
+
 from PySide6.QtCore import QPropertyAnimation, QSize, Qt
 from PySide6.QtGui import QPainter
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QMdiSubWindow,
-                               QMessageBox, QProgressBar, QPushButton,
-                               QScrollArea, QStyle, QStyleOption, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import QColorDialog, QFrame, QHBoxLayout, QLabel, \
+    QMdiSubWindow, QMessageBox, QProgressBar, QPushButton, QScrollArea, QStyle, \
+    QStyleOption, QVBoxLayout, QWidget
 
 from models.filament import FilamentData
 from models.piece import PieceData
@@ -121,8 +122,10 @@ class MetricsRow(QWidget):
         self.card_venda = MetricCard("Preço sugerido", "#3B6D11")
         layout.addWidget(self.card_venda)
 
-    def atualizar(self, piece: PieceData, filament: FilamentData):
-        pg = filament.preco_grama
+    def atualizar(self, piece: PieceData, filaments: List[FilamentData]):
+        pg = 0
+        for filament in filaments:
+            pg += filament.preco_grama
         self.card_material.set_value(piece.custo_material(pg))
         self.card_energia.set_value(piece.custo_energia())
         self.card_total.set_value(piece.custo_total(pg))
@@ -260,10 +263,8 @@ class PiecePanel(Panel):
         self.colors_row2.setSpacing(8)
         self.colors_row2.addStretch()
         self.add_layout(self.colors_row2)
-
         for color in self.piece.cores:
             self._insert_dot(color)
-
         self.add(make_divider())
 
         # observações
@@ -300,9 +301,9 @@ class PiecePanel(Panel):
         else:
             idx = self.colors_row2.indexOf(self.add_dot)
             self.colors_row2.insertWidget(idx, dot)
+        #self.piece.cores.append(color)
 
     def _on_add_dot_clicked(self):
-        from PySide6.QtWidgets import QColorDialog
         color = QColorDialog.getColor()
         if color.isValid():
             self._insert_dot(color.name())
@@ -317,14 +318,15 @@ class PiecePanel(Panel):
             return False
         try:
             peso = float(self.weight_input.text().replace(",", "."))
-            tempo = self._get_prod_time_h(self.time_input.text())
-            print(tempo)
+            tempo = self.get_prod_time_h(self.time_input.text())
             infill = int(self.infill_input.text())
         except ValueError:
             StyledMessageBox.warning(
                 self,
                 "Valor inválido",
-                "<font color=black>Peso, tempo e infill devem ser numéricos.</font>")
+                "<font color=black>"
+                "Peso, tempo e infill devem ser numéricos."
+                "</font>")
             return False
 
         self.piece.nome = nome
@@ -334,8 +336,8 @@ class PiecePanel(Panel):
         self.piece.observacoes = self.obs_input.text()
         return True
 
-    def _get_prod_time_h(self, text: str) -> float:
-        if not 'h' in text.lower():
+    def get_prod_time_h(self, text: str) -> float:
+        if not 'h' in text.lower() and len(text) > 2:
             StyledMessageBox.warning(
                 self, "Formato Inválido",
                 "<font color=black>Entre com o tempo no formato: xxhyy</font>") # NOQA
@@ -349,7 +351,7 @@ class PiecePanel(Panel):
 
 # ── painel direito superior: filamento ───────────────────────────────────────
 class FilamentPanel(Panel):
-    def __init__(self, filament: FilamentData):
+    def __init__(self, filament: List[FilamentData]):
         super().__init__("Filamento")
         self.filament = filament
 
@@ -359,7 +361,7 @@ class FilamentPanel(Panel):
         col1.setSpacing(4)
         col1.addWidget(form_label("Tipo"))
         self.type_combo = styled_combo(["PLA", "PETG", "ABS", "TPU", "ASA"])
-        self.type_combo.setCurrentText(filament.tipo)
+        self.type_combo.setCurrentText(self.filament[0].tipo)
         col1.addWidget(self.type_combo)
 
         col2 = QVBoxLayout()
@@ -370,7 +372,7 @@ class FilamentPanel(Panel):
                 "Polymaker", "Bambu", "Hatchbox", "eSUN", "MultiLaser",
                 "Creality"
             ])
-        self.brand_combo.setCurrentText(filament.marca)
+        self.brand_combo.setCurrentText(self.filament[0].marca)
         col2.addWidget(self.brand_combo)
 
         row1.addLayout(col1)
@@ -385,7 +387,7 @@ class FilamentPanel(Panel):
         col3.addWidget(form_label("Cor"))
         self.color_combo = styled_combo(
             ["Azul", "Vermelho", "Branco", "Preto"])
-        self.color_combo.setCurrentText(filament.cor)
+        self.color_combo.setCurrentText(self.filament[0].cor)
         col3.addWidget(self.color_combo)
 
         col4 = QVBoxLayout()
@@ -393,7 +395,7 @@ class FilamentPanel(Panel):
         col4.addWidget(form_label("Preço/kg (R$)"))
         self.price_input = styled_input("89,90")
         self.price_input.setText(
-            f"{filament.preco_kg:.2f}".replace(".", ",")
+            f"{self.filament[0].preco_kg:.2f}".replace(".", ",")
         )
         col4.addWidget(self.price_input)
 
@@ -414,9 +416,10 @@ class FilamentPanel(Panel):
         bar.setValue(62)
         bar.setFixedHeight(6)
         bar.setTextVisible(False)
-        bar.setStyleSheet("""
-            QProgressBar { border-radius:3px; background:#D3D1C7; }
-            QProgressBar::chunk { border-radius:3px; background:#185FA5; }
+        bar.setStyleSheet(f"""
+            QProgressBar {{ border-radius:3px; background:#D3D1C7; }}
+            QProgressBar::chunk {{ border-radius:3px; 
+            background:{self.filament[0].cor_str}; }}
         """)
         self.add(bar)
 
@@ -443,7 +446,7 @@ class FilamentPanel(Panel):
 
 # ── painel direito inferior: custos ──────────────────────────────────────────
 class CostPanel(Panel):
-    def __init__(self, piece: PieceData, filament: FilamentData):
+    def __init__(self, piece: PieceData, filament: List[FilamentData]):
         super().__init__("Custos & precificação")
         self.piece = piece
         self.filament = filament
@@ -508,9 +511,11 @@ class CostPanel(Panel):
             self.piece.margem_pct = float(
                 self.margin_input.text().replace(",", ".") or "0")
         except ValueError:
-            pass
-
-        pg  = self.filament.preco_grama
+            StyledMessageBox.warning(
+                self, "Erro de margem", "A margem deve ser numérica!"
+            )
+        print(self.filament)
+        pg  = sum([x.preco_grama for x in self.filament])
         mat = self.piece.custo_material(pg)
         ene = self.piece.custo_energia()
         mo  = self.piece.mao_de_obra
@@ -526,7 +531,7 @@ class CostPanel(Panel):
 
 # ── área principal de conteúdo
 class MainContent(QWidget):
-    def __init__(self, piece, filament):
+    def __init__(self, piece, filament: List[FilamentData]):
         super().__init__()
         self.piece = piece
         self.filament = filament
@@ -575,12 +580,13 @@ class MainContent(QWidget):
         try:
             self.piece.peso_g = float(
                 self.piece_panel.weight_input.text().replace(",", ".") or "0")
-            self.piece.tempo_horas = float(
+            self.piece.tempo_horas = self.piece_panel.get_prod_time_h(
                 self.piece_panel.time_input.text().replace(",", ".") or "0")
-            self.filament.preco_kg = float(
+            for filament in self.filament:
+                filament.preco_kg = float(
                 self.filament_panel.price_input.text().replace(",", ".") or "0")
         except ValueError:
-            pass
+            ...
         self.recalcular()
 
     def _on_name_changed(self, text):
@@ -605,11 +611,15 @@ class WidgetContent(QWidget):
 
         # piece, filament = db.load_piece(id)
         self.piece = PieceData(cores=["#1565C0"])
-        self.filament = FilamentData()
+        self.filament = [FilamentData(cor_str=cor) for cor in self.piece.cores]
+        print(self.filament)
+        #self.filament = FilamentData()
+
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(8, 0, 8, 0)
         self.layout.setSpacing(0)
         self.setLayout(self.layout)
+
         self.topbar = TopBar()
         self.topbar.save_btn.clicked.connect(self._on_save)
         self.topbar.cancel_btn.clicked.connect(self._on_cancel)
@@ -619,6 +629,7 @@ class WidgetContent(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setStyleSheet("background: #F5F4F0;")
+
         self.main_content = MainContent(self.piece, self.filament)
         scroll.setWidget(self.main_content)
         self.layout.addWidget(scroll)

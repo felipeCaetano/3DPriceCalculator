@@ -6,11 +6,15 @@ from typing import List
 class PieceData:
     nome: str = ""
     peso_g: float = 0.0
+    purga_g: float = 0.0
     tempo_horas: float = 0.0
     infill_pct: int = 20
     qualidade_mm: float = 0.2
     cores: List[str] = field(default_factory=list)
     observacoes: str = ""
+    embalagem: float = 1.0
+
+    # Estes dados não pertencem a peça mas as configurações de ambiente
     mao_de_obra: float = 2.0
     kwh_preco: float = 1.18
     potencia_kw: float = 0.30
