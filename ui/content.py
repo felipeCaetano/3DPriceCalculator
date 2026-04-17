@@ -263,8 +263,8 @@ class PiecePanel(Panel):
         self.colors_row2.setSpacing(8)
         self.colors_row2.addStretch()
         self.add_layout(self.colors_row2)
-        for color in self.piece.cores:
-            self._insert_dot(color)
+        for filament in self.piece.filamentos:
+            self._insert_dot(filament.cor_str)
         self.add(make_divider())
 
         # observações
@@ -281,8 +281,13 @@ class PiecePanel(Panel):
         dot.clicked.connect(dot.handle_data)
         return dot
 
-    def _insert_dot(self, color: str):
-        """Insere um dot na linha correta e move o add_dot se necessário."""
+    def _insert_dot(self, color: str, sync_model: bool = False):
+        """
+        sync_model=False → apenas desenha o dot (usado na inicialização,
+                            iterando sobre cores que já estão no modelo)
+        sync_model=True  → desenha e também adiciona a cor ao modelo
+                            (usado quando o usuário escolhe uma cor nova)
+        """
         if self.dot_count >= 16:
             QMessageBox.warning(self, "Limite atingido",
                                 "Número máximo de 16 cores alcançado!")
@@ -301,12 +306,13 @@ class PiecePanel(Panel):
         else:
             idx = self.colors_row2.indexOf(self.add_dot)
             self.colors_row2.insertWidget(idx, dot)
-        #self.piece.cores.append(color)
+        if sync_model:                          # só append quando vier do usuário
+            self.piece.filamentos.append(FilamentData(cor_str=color))
 
     def _on_add_dot_clicked(self):
         color = QColorDialog.getColor()
         if color.isValid():
-            self._insert_dot(color.name())
+            self._insert_dot(color.name(), sync_model=True)
 
     def collect(self) -> bool:
         """Valida e grava os campos no modelo. Retorna False se inválido."""
@@ -610,8 +616,8 @@ class WidgetContent(QWidget):
         self.mdi = mdi
 
         # piece, filament = db.load_piece(id)
-        self.piece = PieceData(cores=["#1565C0"])
-        self.filament = [FilamentData(cor_str=cor) for cor in self.piece.cores]
+        self.piece = PieceData(filamentos=[FilamentData(cor_str="#1565C0")])
+        self.filament = self.piece.filamentos
         print(self.filament)
         #self.filament = FilamentData()
 

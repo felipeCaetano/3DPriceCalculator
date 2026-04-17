@@ -55,6 +55,11 @@ def styled_combo(options):
         }
         QComboBox:focus { border-color: #185FA5; }
         QComboBox::drop-down { border: none; width: 20px; }
+        QComboBox QAbstractItemView {
+            border: 1px solid darkgray;
+            selection-background-color: lightgray;
+            background-color: white;
+        }
     """)
     return w
 

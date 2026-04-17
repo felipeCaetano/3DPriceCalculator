@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List
 
+from .filament import FilamentData
+
 
 @dataclass
 class PieceData:
@@ -10,7 +12,7 @@ class PieceData:
     tempo_horas: float = 0.0
     infill_pct: int = 20
     qualidade_mm: float = 0.2
-    cores: List[str] = field(default_factory=list)
+    filamentos: List[FilamentData] = field(default_factory=list)
     observacoes: str = ""
     embalagem: float = 1.0
 
@@ -21,7 +23,7 @@ class PieceData:
     margem_pct: float = 150.0
 
     def custo_material(self, preco_grama: float) -> float:
-        return self.peso_g * preco_grama
+        return sum(f.custo for f in self.filamentos)
 
     def custo_energia(self) -> float:
         return self.tempo_horas * self.potencia_kw * self.kwh_preco
