@@ -1,10 +1,14 @@
 import sys
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                             QHBoxLayout, QLabel, QPushButton, QFrame, QLineEdit, 
-                             QComboBox, QProgressBar, QTextEdit, QGridLayout, QGraphicsDropShadowEffect, QScrollArea)
+from PySide6.QtWidgets import (QApplication, QMainWindow, QStackedWidget,
+                               QWidget, QVBoxLayout,
+                               QHBoxLayout, QLabel, QPushButton, QFrame,
+                               QLineEdit,
+                               QComboBox, QProgressBar, QTextEdit, QGridLayout,
+                               QGraphicsDropShadowEffect, QScrollArea)
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QFont, QIcon, QColor
 
+from ui.stylehelper import styled_combo
 
 # Estilização Global (QSS)
 STYLE_SHEET = """
@@ -34,7 +38,9 @@ QMainWindow {
     border-radius: 10px;
     padding: 10px;
 }
-
+QLabel{
+    font-size: 11px; color: #5F5E5A;
+    }
 QLabel#MenuTitle {
     font-size: 18px;
     font-weight: bold;
@@ -72,11 +78,13 @@ QLabel#CardTitle {
     color: #333;
 }
 
-QLineEdit, QComboBox, QTextEdit {
+QLineEdit, QTextEdit {
     border: 1px solid #D1D5DB;
     border-radius: 6px;
     padding: 8px;
     background-color: white;
+    background: white;
+    color: #2C2C2A;
 }
 
 QPushButton#PrimaryButton {
@@ -158,20 +166,21 @@ class FilamentCard(QFrame):
         
         f_grid = QGridLayout()
         f_grid.addWidget(QLabel("Tipo"), 0, 0)
-        self.filament_type = QComboBox()
-        for f_type in sorted(["PLA", "PETG", "ABS", "TPU", "ASA", "Nylon"]):
-            self.filament_type.addItem(f_type)
+        self.filament_type = styled_combo(
+            ["PLA", "PETG", "ABS", "TPU", "ASA", "Nylon"]
+        )
         f_grid.addWidget(self.filament_type, 1, 0)
         f_grid.addWidget(QLabel("Marca"), 0, 1)
-        self.filament_brand = QComboBox()
-        for f_brand in sorted(["Elegoo", "Polymaker", "Bambu", "Hatchbox", "eSUN", "MultiLaser",
-                "Creality", "Volt3D", "F3D", "GTMAX3D", "Anycubic"]):
-                self.filament_brand.addItem(f_brand)
+        self.filament_brand = styled_combo(
+            ["Elegoo", "Polymaker", "Bambu", "Hatchbox", "eSUN", "MultiLaser",
+             "Creality", "Volt3D", "F3D", "GTMAX3D", "Anycubic"]
+        )
+
         f_grid.addWidget(self.filament_brand, 1, 1)
         f_grid.addWidget(QLabel("Cor"), 2, 0)
-        self.filament_color = QComboBox()
-        for color in sorted(["Azul", "Vermelho", "Branco", "Preto", "Amarelo", "Verde"]):
-            self.filament_color.addItem(color)
+        self.filament_color = styled_combo(
+            ["Azul", "Vermelho", "Branco", "Preto", "Amarelo", "Verde"]
+        )
         f_grid.addWidget(self.filament_color, 3, 0)
         f_grid.addWidget(QLabel("Preço/kg (R$)"), 2, 1)
         self.filament_price =QLineEdit()
@@ -195,6 +204,9 @@ class Print3DManager(QMainWindow):
         self.resize(1100, 800)
         self.setStyleSheet(STYLE_SHEET)
 
+        # O "Coração" da navegação
+        self.stack = QStackedWidget()
+
         # Layout Principal (HBox: Sidebar + Main Content)
         main_layout = QHBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -205,7 +217,8 @@ class Print3DManager(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.setup_sidebar(main_layout)
-        self.setup_main_content(main_layout)
+        self.setup_main_content(self.stack)
+        main_layout.addWidget(self.stack)
 
     def setup_sidebar(self, layout):
         sidebar = QFrame()
@@ -228,21 +241,25 @@ class Print3DManager(QMainWindow):
 
         # Menu Items
         labels = [
-            ("PRINCIPAL", False, None),
-            ("Dashboard", True,  "res/img/icons/dashboard.png"),
-            ("Nova peça", False,  "res/img/icons/3dpiece.png"),
-            ("Histórico", False, "res/img/icons/history.png"),
-            ("ESTOQUE", False, None),
-            ("Filamentos", False, "res/img/icons/filament.png"),
-            ("Relatórios", False, "res/img/icons/report.png"),
-            ("Divider", False, None),
-            ("Configurações", False, "res/img/icons/settings.png")
+            ("PRINCIPAL", False, None, None),
+            ("Dashboard", True,  "res/img/icons/dashboard.png", None),
+            ("Nova peça", False,  "res/img/icons/3dpiece.png", None),
+            ("Histórico", False, "res/img/icons/history.png", None),
+            ("ESTOQUE", False, None, None),
+            ("Filamentos", False, "res/img/icons/filament.png", self._filament_manager),
+            ("Relatórios", False, "res/img/icons/report.png", None),
+            ("Divider", False, None, None),
+            ("Configurações", False, "res/img/icons/settings.png", None)
         ]
 
-        for text, is_active, icon_path in labels:
+        for text, is_active, icon_path, callback in labels:
             if text in ["PRINCIPAL", "ESTOQUE"]:
                 lbl = QLabel(text)
-                lbl.setStyleSheet("color: #888780;; font-size: 10px; letter-spacing: 1px; font-weight: bold; margin-top: 2px;")
+                lbl.setStyleSheet(
+                    "color: #888780;"
+                    "font-size: 10px;"
+                    " letter-spacing: 1px; font-weight: bold; margin-top: 2px;"
+                )
                 sidebar_layout.addWidget(lbl)
             elif text == "Divider":
                 sidebar_layout.addWidget(make_divider())
@@ -253,11 +270,16 @@ class Print3DManager(QMainWindow):
                 icon = QIcon(icon_path)
                 btn.setIcon(icon)
                 btn.setIconSize(QSize(18, 18))
+                if callback:
+                    btn.clicked.connect(callback)
                 btn.setCursor(Qt.PointingHandCursor)
                 sidebar_layout.addWidget(btn)
 
         sidebar_layout.addStretch()
         layout.addWidget(sidebar)
+
+    def _filament_manager(self):
+        print("abriu filamento")
 
     def setup_main_content(self, layout):
         content_wrapper = QWidget()
@@ -347,9 +369,8 @@ class Print3DManager(QMainWindow):
         v3.addWidget(infill_input)
         v4 = QVBoxLayout()
         v4.addWidget(QLabel("Qualidade (mm)"))
-        quality_input = QComboBox()
-        for entry in ["0.2 mm (normal)", "0.1 mm (fina)", "0.3 mm (rápida)"]:
-            quality_input.addItem(entry)
+        quality_input = styled_combo(["0.2 mm (normal)", "0.1 mm (fina)", "0.3 mm (rápida)"])
+
         v4.addWidget(quality_input)
         row3.addLayout(v3)
         row3.addLayout(v4)

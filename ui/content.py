@@ -701,7 +701,7 @@ class WidgetContent(QWidget):
 
 class Content(QMdiSubWindow):
     def __init__(self, parent):
-        super(Content, self).__init__()
+        super().__init__()
         self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
         self.widget = WidgetContent(parent)
         self.setWidget(self.widget)

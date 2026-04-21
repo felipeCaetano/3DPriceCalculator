@@ -9,7 +9,7 @@ from ui.sidemenu import SideMenu
 
 class MdiArea(QMdiArea):
     def __init__(self):
-        super(MdiArea, self).__init__()
+        super().__init__()
         self.menu = SideMenu()
         self.content= Content(self) 
         self.overlay = Overlay(self)
