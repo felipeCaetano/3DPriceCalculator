@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class FilamentData:
     tipo: str = "PLA"
+    acabamento: str = "Sólido"
     marca: str = "Polymaker"
     cor: str = "Azul royal"
     cor_str: str = ""
