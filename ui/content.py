@@ -126,7 +126,7 @@ class MetricsRow(QWidget):
         pg = 0
         for filament in filaments:
             pg += filament.preco_grama
-        self.card_material.set_value(piece.custo_material(pg))
+        self.card_material.set_value(piece.custo_material())
         self.card_energia.set_value(piece.custo_energia())
         self.card_total.set_value(piece.custo_total(pg))
         self.card_venda.set_value(piece.preco_venda(pg))
@@ -522,7 +522,7 @@ class CostPanel(Panel):
             )
         print(self.filament)
         pg  = sum([x.preco_grama for x in self.filament])
-        mat = self.piece.custo_material(pg)
+        mat = self.piece.custo_material()
         ene = self.piece.custo_energia()
         mo  = self.piece.mao_de_obra
         tot = self.piece.custo_total(pg)

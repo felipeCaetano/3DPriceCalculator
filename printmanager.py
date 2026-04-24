@@ -1,18 +1,13 @@
 import sys
-from PySide6.QtWidgets import (QApplication, QMainWindow, QStackedWidget,
-                               QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                               QPushButton, QFrame, QLineEdit, QComboBox,
-                               QProgressBar, QTextEdit, QGridLayout,
-                               QGraphicsDropShadowEffect, QScrollArea)
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QFont, QIcon, QColor
 
-from ui.stylehelper import make_divider, styled_combo, STYLE_SHEET
-from ui.clicklable import ClickableLabel, ColoredDot
-from ui.filament import FilamentCard, FilamentForm, FilamentPageWidget
+from PySide6.QtWidgets import (QApplication, QMainWindow, QStackedWidget,
+                               QWidget, QHBoxLayout)
+
 from ui.dashboard import DashBoard
-from ui.sidebar import Sidebar      
-                 
+from ui.filament import FilamentPageWidget
+from ui.sidebar import Sidebar
+from ui.stylehelper import STYLE_SHEET
+
 
 class Print3DManager(QMainWindow):
     def __init__(self):
@@ -40,7 +35,7 @@ class Print3DManager(QMainWindow):
         self.stack.addWidget(self.tela_filamentos)
         main_layout.addWidget(self.stack)
 
-    def _filament_manager(self, index):
+    def _filament_manager(self):
         self.stack.setCurrentIndex(1)
 
    

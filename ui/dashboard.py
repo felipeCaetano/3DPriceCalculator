@@ -1,14 +1,10 @@
-from PySide6.QtWidgets import (QApplication, QMainWindow, QStackedWidget,
-                               QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                               QPushButton, QFrame, QLineEdit, QComboBox,
-                               QProgressBar, QTextEdit, QGridLayout,
-                               QGraphicsDropShadowEffect, QScrollArea)
-from PySide6.QtGui import QFont, QIcon, QColor
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                               QPushButton, QFrame, QLineEdit, QTextEdit)
 
-from ui.stylehelper import make_divider, styled_combo, STYLE_SHEET
-from ui.clicklable import ClickableLabel, ColoredDot
-from ui.filament import FilamentCard, FilamentForm, FilamentPageWidget
+from ui.clicklable import ClickableLabel
+from ui.filament import FilamentCard
+from ui.stylehelper import make_divider, styled_combo
 
 
 class CostCard(QFrame):

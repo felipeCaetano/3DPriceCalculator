@@ -1,17 +1,16 @@
-from PySide6.QtCore import Qt, QPropertyAnimation, QSize, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import (
-    QColorDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QMdiSubWindow,
+    QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QProgressBar, QPushButton, QScrollArea, QStyle, QStyleOption,
-    QVBoxLayout, QWidget, QSizePolicy
+    QVBoxLayout, QWidget
 )
 
 from models.filament import FilamentData
-from ui.stylehelper import form_label, make_divider, panel_title, styled_combo, \
-    styled_input, STYLE_SHEET
-from ui.styledmessagebox import StyledMessageBox
 from ui.clicklable import ColoredDot
+from ui.styledmessagebox import StyledMessageBox
+from ui.stylehelper import form_label, make_divider, styled_combo, \
+    styled_input, STYLE_SHEET
 
 
 class FilamentCard(QFrame):
@@ -356,7 +355,7 @@ class FilamentPageWidget(QWidget):
         root_layout.addWidget(self.form)
 
     # ── lista ──
-    def _rebuild_list(self, event=None):
+    def _rebuild_list(self):
         """Reconstrói todos os cards a partir de self._filaments."""
         # remove cards antigos
         for card in self._cards:

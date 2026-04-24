@@ -1,7 +1,7 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
- QPushButton, QFrame, QLineEdit,  QGridLayout,  QGraphicsDropShadowEffect)
-from PySide6.QtGui import QFont, QIcon, QColor
 from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (QVBoxLayout, QLabel,
+                               QPushButton, QFrame, QGraphicsDropShadowEffect)
 
 from ui.stylehelper import make_divider
 
