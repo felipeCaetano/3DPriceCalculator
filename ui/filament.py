@@ -2,7 +2,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import (
     QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QMessageBox, QProgressBar, QPushButton, QScrollArea, QStyle, QStyleOption,
+    QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox, QStyle,
+    QStyleOption,
     QVBoxLayout, QWidget
 )
 
@@ -23,38 +24,37 @@ class FilamentCard(QFrame):
         self.filament = filamento
         self.setProperty("class", "Card")
         fil_lay = QVBoxLayout(self)
+        fil_lay.setSpacing(2)
+        fil_lay.setContentsMargins(4,4,4,4)
         self.name_lbl = QLabel("Filamento", objectName="CardTitle")
         fil_lay.addWidget(self.name_lbl)
 
         f_grid = QGridLayout()
-        f_grid.addWidget(QLabel("Tipo"), 0, 0)
-        self.filament_type = styled_combo(
-            ["PLA", "PETG", "ABS", "TPU", "ASA", "Nylon"]
-        )
+        f_grid.setHorizontalSpacing(12)
+        f_grid.setVerticalSpacing(4)
+
+        f_grid.addWidget(form_label("Tipo"), 0, 0)
+        self.filament_type =QLabel("PLA")
         f_grid.addWidget(self.filament_type, 1, 0)
-        f_grid.addWidget(QLabel("Marca"), 0, 1)
-        self.filament_brand = styled_combo(
-            ["Elegoo", "Polymaker", "Bambu", "Hatchbox", "eSUN", "MultiLaser",
-             "Creality", "Volt3D", "F3D", "GTMAX3D", "Anycubic"]
-        )
+        f_grid.addWidget(form_label("Marca"), 0, 1)
+        self.filament_brand = QLabel("Anycubic")
 
         f_grid.addWidget(self.filament_brand, 1, 1)
-        f_grid.addWidget(QLabel("Cor"), 2, 0)
+        f_grid.addWidget(form_label("Cor"), 0, 2)
         self.filament_color = ColoredDot()
         self.filament_color.handle_data("#0000ff")
         self.filament_color.setFixedSize(32, 32)
-        f_grid.addWidget(self.filament_color, 3, 0)
-        f_grid.addWidget(QLabel("Preço/kg (R$)"), 2, 1)
-        self.filament_price = QLineEdit()
-        self.filament_price.setPlaceholderText("89,90")
-        f_grid.addWidget(self.filament_price, 3, 1)
+        f_grid.addWidget(self.filament_color, 1, 2)
+        f_grid.addWidget(form_label("Preço/kg"), 0, 3)
+        self.filament_price = QLabel("R$ 89,90")
+        f_grid.addWidget(self.filament_price, 1, 3)
         fil_lay.addLayout(f_grid)
 
-        fil_lay.addWidget(QLabel("Bobina restante: 62%"))
+        fil_lay.addWidget(form_label("Bobina restante:"))
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(64)
-        self.progress_bar.setTextVisible(False)
-        self.progress_bar.setFixedHeight(8)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFixedHeight(16)
         self.progress_bar.setStyleSheet(
             """QProgressBar::chunk {
              background-color: #2563EB;
@@ -89,12 +89,21 @@ class FilamentCard(QFrame):
     def refresh(self):
         """Atualiza o card com os dados atuais do filament."""
         self.name_lbl.setText(
-            f"{self.filament.marca} — {self.filament.tipo}"
+            f"{self.filament.marca} — {self.filament.tipo} "
         f"{self.filament.acabamento}: {self.filament.cor}"
         )
         self.filament_price.setText(str(self.filament.preco_kg))
+        self.filament_price.setReadOnly(True)
         self.filament_color.handle_data(self.filament.cor_str)
-        self.filament_brand.setCurrentText(self.filament.marca)
+        self.filament_brand.setText(self.filament.marca)
+        self.progress_bar.setValue(self.filament.bobina_restante_pct)
+        self.filament_type.setText((self.filament.tipo))
+        self.progress_bar.setStyleSheet(
+            f"""QProgressBar::chunk {{
+             background-color: {self.filament.cor_str};
+             border-radius: 4px; 
+             border-color: #ff0000;}}"""
+        )
 
 
 class FilamentForm(QWidget):
@@ -110,7 +119,7 @@ class FilamentForm(QWidget):
         "Condutivo", "Premium", "Velvet"
     ]
     MARCAS = [
-        "Polymaker", "Bambu", "Hatchbox", "eSUN", "Creality", "Anycubic",
+        "Polymaker", "Bambu", "Hatchbox", "Creality", "Anycubic",
         "F3D", "Elegoo", "eSUN", "MultiLaser", "Yousu", "Outra"
     ]
 
@@ -179,21 +188,52 @@ class FilamentForm(QWidget):
         cor_row.addLayout(cor_columun)
         root.addLayout(cor_row)
 
-        # preço/kg
-        root.addWidget(form_label("Preço/kg (R$)"))
+        # preço/kg e quantidade
+        preco_quant_row = QHBoxLayout()
+        preco_quant_row.setSpacing(2)
+        preco_column =  QVBoxLayout()
+        preco_column.setSpacing(2)
+        preco_column.addWidget(form_label("Preço/kg (R$)"))
         self.preco_input = styled_input("89,90")
-        root.addWidget(self.preco_input)
+        preco_column.addWidget(self.preco_input)
+        preco_quant_row.addLayout(preco_column)
+
+        quantidade_column = QVBoxLayout()
+        quantidade_column.setSpacing(2)
+        quantidade_column.addWidget(form_label("Quantidade"))
+        self.quantidade_input = QSpinBox()
+        self.quantidade_input.setStyleSheet("""
+                QSpinBox {
+                    border: 0.5px solid #B4B2A9;
+                    border-radius: 6px;
+                    padding: 0 8px;
+                    font-size: 12px;
+                    background: white;
+                    color: #2C2C2A;
+                }
+                QSpinBox:focus { border-color: #185FA5; }
+                QSpinBox:up-button { subcontrol-origin border;
+                width: 18px; }
+                QSpinBox:down-button { subcontrol-origin border;
+                width: 18px; }
+            """)
+        self.quantidade_input.setFixedHeight(28)
+        self.quantidade_input.setMinimum(1)
+        self.quantidade_input.setSuffix(' Bobinas')
+        quantidade_column.addWidget(self.quantidade_input)
+        preco_quant_row.addLayout(quantidade_column)
+        root.addLayout(preco_quant_row)
 
         # peso bobina + peso usado
         row2 = QHBoxLayout()
         row2.setSpacing(8)
-        c3 = QVBoxLayout();
+        c3 = QVBoxLayout()
         c3.setSpacing(4)
         c3.addWidget(form_label("Peso bobina (g)"))
         self.bobina_input = styled_input("1000")
         c3.addWidget(self.bobina_input)
 
-        c4 = QVBoxLayout();
+        c4 = QVBoxLayout()
         c4.setSpacing(4)
         c4.addWidget(form_label("Já usado (g)"))
         self.usado_input = styled_input("0")
@@ -224,21 +264,22 @@ class FilamentForm(QWidget):
     def _populate_form(self, filament):
         if filament is None:
             self.form_title.setText("Novo filamento")
-            self.tipo_combo.setCurrentText("PLA")
-            self.marca_combo.setCurrentText("Polymaker")
+            self.tipo_combo.setCurrentIndex(0)
+            self.marca_combo.setCurrentIndex(0)
             self.cor_input.clear()
-            self.cor_hex_input.setText("#000000")
-            self.preco_input.setText("89,90")
-            self.bobina_input.setText("1000")
-            self.usado_input.setText("0")
+            self.cor_hex_input.setPlaceholderText("#000000")
+            self.preco_input.setPlaceholderText("89,90")
+            self.bobina_input.setPlaceholderText("1000")
+            self.usado_input.setPlaceholderText("0")
         else:
             self.form_title.setText("Editar filamento")
             self.tipo_combo.setCurrentText(filament.tipo)
             self.marca_combo.setCurrentText(filament.marca)
             self.cor_input.setText(filament.cor)
-            self.cor_hex_input.setText(filament.cor_str or "#000000")
+            self.cor_hex_input.setText(filament.cor_str)
             self.preco_input.setText(
                 f"{filament.preco_kg:.2f}".replace(".", ","))
+            self.quantidade_input.setValue(filament.quantidade)
             self.bobina_input.setText(str(int(filament.peso_bobina_g)))
             self.usado_input.setText(str(int(filament.peso_usado_g)))
 
@@ -278,6 +319,7 @@ class FilamentForm(QWidget):
         self._filament.acabamento = self.acabamento_combo.currentText()
         self._filament.cor = self.cor_input.text().strip() or "Sem nome"
         self._filament.cor_str = self.cor_hex_input.text().strip()
+        self._filament.quantidade = self.quantidade_input.value()
         self._filament.preco_kg = preco
         self._filament.peso_bobina_g = bobina
         self._filament.peso_usado_g = usado

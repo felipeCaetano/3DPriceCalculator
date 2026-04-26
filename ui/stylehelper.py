@@ -19,7 +19,7 @@ QMainWindow {
 #FilamentForm {
     background: white;
     border-left: 0.5px solid #D3D1C7;
-            }
+}
 
 #ContentArea {
     background-color: #FFFFFF;
@@ -194,7 +194,7 @@ def styled_combo(options):
 
 def form_label(text):
     lbl = QLabel(text)
-    lbl.setStyleSheet("font-size: 11px; color: #5F5E5A;")
+    lbl.setStyleSheet("font-size: 14px; color: #5F5E5A; font-weight: 500;")
     return lbl
 
 

@@ -14,6 +14,7 @@ class FilamentData:
     peso_usado_g: float = 380.0
     data_fabricacao: str = ""
     data_abertura: str = ""
+    quantidade: int = 0
 
     @property
     def preco_grama(self) -> float:
@@ -25,9 +26,9 @@ class FilamentData:
 
     @property
     def bobina_restante_pct(self) -> int:
-        if self.peso_bobina_g <= 0:
+        if self.peso_bobina_g <= 0 and self.quantidade == 0:
             return 0
-        restante = self.peso_bobina_g - self.peso_usado_g
+        restante = (self.peso_bobina_g  * self.quantidade) - self.peso_usado_g
         return max(0, int((restante / self.peso_bobina_g) * 100))
     
     def registrar_uso(self):

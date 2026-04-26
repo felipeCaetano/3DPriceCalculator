@@ -17,8 +17,6 @@ class Print3DManager(QMainWindow):
         self.setStyleSheet(STYLE_SHEET)
  
         self.stack = QStackedWidget()
-
-        # Layout Principal (HBox: Sidebar + Main Content)
         main_layout = QHBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
