@@ -14,96 +14,145 @@ from ui.stylehelper import form_label, make_divider, styled_combo, \
     styled_input, STYLE_SHEET
 
 
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QVBoxLayout,
+)
+
+from models.filament import FilamentData
+from ui.clicklable import ColoredDot
+from ui.stylehelper import form_label
+
+
 class FilamentCard(QFrame):
-    """Card Filamento"""
-    edit_requested = Signal(object)  # emite o FilamentData salvo
+    """Card de visualização de um FilamentData."""
+
+    edit_requested = Signal(object)
     delete_requested = Signal()
 
     def __init__(self, filamento: FilamentData):
         super().__init__()
         self.filament = filamento
         self.setProperty("class", "Card")
-        fil_lay = QVBoxLayout(self)
-        fil_lay.setSpacing(2)
-        fil_lay.setContentsMargins(4,4,4,4)
+        self.setFixedHeight(128)
+
         self.name_lbl = QLabel("Filamento", objectName="CardTitle")
-        fil_lay.addWidget(self.name_lbl)
-
-        f_grid = QGridLayout()
-        f_grid.setHorizontalSpacing(12)
-        f_grid.setVerticalSpacing(4)
-
-        f_grid.addWidget(form_label("Tipo"), 0, 0)
-        self.filament_type =QLabel("PLA")
-        f_grid.addWidget(self.filament_type, 1, 0)
-        f_grid.addWidget(form_label("Marca"), 0, 1)
+        self.filament_type = QLabel("PLA")
+        self.filament_acabamento = QLabel("Hyper Speed")
         self.filament_brand = QLabel("Anycubic")
-
-        f_grid.addWidget(self.filament_brand, 1, 1)
-        f_grid.addWidget(form_label("Cor"), 0, 2)
-        self.filament_color = ColoredDot()
-        self.filament_color.handle_data("#0000ff")
-        self.filament_color.setFixedSize(32, 32)
-        f_grid.addWidget(self.filament_color, 1, 2)
-        f_grid.addWidget(form_label("Preço/kg"), 0, 3)
         self.filament_price = QLabel("R$ 89,90")
-        f_grid.addWidget(self.filament_price, 1, 3)
-        fil_lay.addLayout(f_grid)
-
-        fil_lay.addWidget(form_label("Bobina restante:"))
+        self.filament_color = ColoredDot()
+        self.filament_color.handle_data("#2563EB")
+        self.filament_color.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.filament_color.setFixedSize(40, 40)
         self.progress_bar = QProgressBar()
-        self.progress_bar.setValue(64)
-        self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFixedHeight(16)
-        self.progress_bar.setStyleSheet(
-            """QProgressBar::chunk {
-             background-color: #2563EB;
-             border-radius: 4px; }"""
-        )
-        fil_lay.addWidget(self.progress_bar)
+        self.progress_bar.valueChanged.connect(self._update_progressbar_text_color)
+
+        self._setup_layout()
+        self._setup_progressbar()
 
         if filamento:
             self.refresh()
 
-    def _apply_dot_color(self, hex_color: str):
-        color = hex_color if hex_color else "#888780"
-        self.color_dot.setStyleSheet(
-            f"background: {color}; border-radius: 16px;"
-            " border: 0.5px solid #D3D1C7;")
+    def _setup_layout(self):
+        """Monta a estrutura de layouts do card."""
+        root = QHBoxLayout(self)
+        root.setContentsMargins(4, 4, 4, 4)
+        root.setSpacing(2)
+        root.addWidget(self.filament_color, alignment=Qt.AlignVCenter)
+        right = QVBoxLayout()
+        right.setSpacing(2)
+        right.addWidget(self.name_lbl)
+        right.addLayout(self._build_grid())
+        right.addWidget(form_label("Bobina restante:"))
+        right.addWidget(self.progress_bar)
+        root.addLayout(right)
 
-    @staticmethod
-    def _icon_btn(icon, color, bg):
-        btn = QPushButton(icon)
-        btn.setFixedSize(26, 26)
-        btn.setCursor(Qt.PointingHandCursor)
-        btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {bg}; color: {color};
-                border: none; border-radius: 6px;
-                font-size: 13px;
-            }}
-            QPushButton:hover {{ opacity: 0.8; }}
-        """)
-        return btn
+    def _build_grid(self):
+        """Monta o grid com tipo, marca e preço."""
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(16)
+        grid.setVerticalSpacing(2)
+        grid.addWidget(form_label("Tipo"), 0, 0)
+        grid.addWidget(self.filament_type, 1, 0)
+        grid.addWidget(form_label("Acabamento"), 0, 1)
+        grid.addWidget(self.filament_acabamento, 1, 1)
+        grid.addWidget(form_label("Marca"), 0, 2)
+        grid.addWidget(self.filament_brand, 1, 2)
+        grid.addWidget(form_label("Preço/kg"), 0, 3)
+        grid.addWidget(self.filament_price, 1, 3)
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 2)
+        grid.setColumnStretch(2, 1)
+        return grid
+
+    def _setup_progressbar(self):
+        """Configura aparência da barra de progresso."""
+        self._chunk_color = "#2563EB"  # cor padrão, pode mudar depois
+        self.progress_bar.setValue(64)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFixedHeight(14)
+        self.progress_bar.setStyleSheet(
+            "QProgressBar {"
+            " border-radius: 4px;"
+            " background: #E5E5E3;"
+            " text-align: center;"
+            " font-size: 10px;"
+            "}"
+            "QProgressBar::chunk {"
+            f" background: {self._chunk_color};"
+            " border-radius: 4px;"
+            "}"
+        )
+
+    def _update_progressbar_text_color(self, value: int):
+        """Troca a cor do texto para contraste com o chunk."""
+        # acima de 50% o texto fica sobre o chunk (azul) → branco
+        # abaixo de 50% o texto fica sobre o fundo (cinza) → preto
+        text_color = "white" if value > 50 else "#2C2C2A"
+        if self._chunk_color == "#ffffff":
+            text_color = "black"
+        elif self._chunk_color == "#000000":
+            text_color = "white"
+        
+        self.progress_bar.setStyleSheet(
+            "QProgressBar {"
+            " border-radius: 4px;"
+            " background: #E5E5E3;"
+            f" color: {text_color};"
+            " text-align: center;"
+            " font-size: 10px;"
+            "}"
+            "QProgressBar::chunk {"
+            " border-radius: 4px;"
+            f" background: {self._chunk_color};"
+            "}"
+        )
 
     def refresh(self):
-        """Atualiza o card com os dados atuais do filament."""
+        """Atualiza os labels com os dados atuais do modelo."""
+        self._chunk_color = self.filament.cor_str
         self.name_lbl.setText(
-            f"{self.filament.marca} — {self.filament.tipo} "
-        f"{self.filament.acabamento}: {self.filament.cor}"
+            f"{self.filament.marca} {self.filament.tipo}"
+            f" — {self.filament.cor.upper()}"
         )
-        self.filament_price.setText(str(self.filament.preco_kg))
-        self.filament_price.setReadOnly(True)
-        self.filament_color.handle_data(self.filament.cor_str)
+        self.filament_type.setText(self.filament.tipo)
         self.filament_brand.setText(self.filament.marca)
-        self.progress_bar.setValue(self.filament.bobina_restante_pct)
-        self.filament_type.setText((self.filament.tipo))
-        self.progress_bar.setStyleSheet(
-            f"""QProgressBar::chunk {{
-             background-color: {self.filament.cor_str};
-             border-radius: 4px; 
-             border-color: #ff0000;}}"""
+        self.filament_price.setText(
+            f"R$ {self.filament.preco_kg:.2f}".replace(".", ",")
         )
+        self.filament_color.handle_data(self.filament.cor_str or "#888780")
+        value = self.filament.bobina_restante_pct
+        self.progress_bar.setValue(value)
+        # chama explicitamente — setValue pode não disparar valueChanged
+        # se o valor for igual ao anterior
+        self._update_progressbar_text_color(value)
+       
 
 
 class FilamentForm(QWidget):
@@ -263,14 +312,7 @@ class FilamentForm(QWidget):
 
     def _populate_form(self, filament):
         if filament is None:
-            self.form_title.setText("Novo filamento")
-            self.tipo_combo.setCurrentIndex(0)
-            self.marca_combo.setCurrentIndex(0)
-            self.cor_input.clear()
-            self.cor_hex_input.setPlaceholderText("#000000")
-            self.preco_input.setPlaceholderText("89,90")
-            self.bobina_input.setPlaceholderText("1000")
-            self.usado_input.setPlaceholderText("0")
+            self._clear()
         else:
             self.form_title.setText("Editar filamento")
             self.tipo_combo.setCurrentText(filament.tipo)
@@ -295,6 +337,16 @@ class FilamentForm(QWidget):
     def _on_hex_changed(self, text):
         if QColor(text).isValid():
             self.pick_btn.handle_data(text)
+    
+    def _clear(self):
+        self.form_title.setText("Novo filamento")
+        self.tipo_combo.setCurrentIndex(0)
+        self.marca_combo.setCurrentIndex(0)
+        self.cor_input.clear()
+        self.cor_hex_input.clear()
+        self.preco_input.clear()
+        self.bobina_input.clear()
+        self.usado_input.clear()
 
     def _on_save(self):
         try:
@@ -311,6 +363,7 @@ class FilamentForm(QWidget):
             self._filament = FilamentData()
 
         filamento = self._set_filament_data(preco, bobina, usado)
+        self._clear()
         self.saved.emit(filamento)
 
     def _set_filament_data(self, preco, bobina, usado):
@@ -326,7 +379,62 @@ class FilamentForm(QWidget):
         return self._filament
 
 
+class FilamentCardRow(QWidget):
+    edit_requested   = Signal(object)
+    delete_requested = Signal(object)
+
+    def __init__(self, filamento: FilamentData):
+        super().__init__()
+        self.filament = filamento
+
+        root = QHBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(8)
+        # alinha todos os filhos ao centro vertical
+        root.setAlignment(Qt.AlignVCenter)
+
+        self.card = FilamentCard(filamento)
+        root.addWidget(self.card, stretch=1)
+
+        self.edit_btn = QPushButton("✎ Editar")
+        self.edit_btn.setFixedSize(80, 30)
+        self.edit_btn.setStyleSheet("""
+            QPushButton {
+                background: #E6F1FB; color: #185FA5;
+                border: none; border-radius: 6px; font-size: 12px;
+            }
+            QPushButton:hover { background: #B5D4F4; }
+        """)
+
+        self.delete_btn = QPushButton("✕ Deletar")
+        self.delete_btn.setFixedSize(80, 30)
+        self.delete_btn.setStyleSheet("""
+            QPushButton {
+                background: #FAECE7; color: #993C1D;
+                border: none; border-radius: 6px; font-size: 12px;
+            }
+            QPushButton:hover { background: #F5C6B0; }
+        """)
+
+        self.edit_btn.clicked.connect(
+            lambda: self.edit_requested.emit(self.filament)
+        )
+        self.delete_btn.clicked.connect(
+            lambda: self.delete_requested.emit(self.filament)
+        )
+
+        btn_col = QVBoxLayout()
+        btn_col.setSpacing(6)
+        btn_col.setAlignment(Qt.AlignVCenter)  # centraliza no eixo vertical
+        btn_col.addWidget(self.edit_btn)
+        btn_col.addWidget(self.delete_btn)
+
+        root.addLayout(btn_col)
+
+
 class FilamentPageWidget(QWidget):
+    """Página que mostra os filamentos disponíveis e permite ações sobre eles"""
+
     def __init__(self):
         super().__init__()
         self._filaments: list[FilamentData] = []
@@ -337,12 +445,10 @@ class FilamentPageWidget(QWidget):
         root_layout.setContentsMargins(0, 0, 0, 0)
         root_layout.setSpacing(0)
 
-        # coluna esquerda — lista
         left = QVBoxLayout()
         left.setContentsMargins(0, 0, 0, 0)
         left.setSpacing(0)
 
-        # topbar da página
         topbar = QWidget()
         topbar.setObjectName("FilamentTopBar")
         topbar.setFixedHeight(56)
@@ -354,14 +460,19 @@ class FilamentPageWidget(QWidget):
         self.add_btn = QPushButton("+ Novo filamento")
         self.add_btn.setObjectName("FilamentNew")
         self.add_btn.setFixedHeight(32)
+        
+        self.edit_btn = QPushButton("Editar")
+        self.edit_btn.setFixedHeight(32)
+        self.delete_btn = QPushButton("Deletar")
+        self.delete_btn.setFixedHeight(32)
 
         self.add_btn.clicked.connect(self._on_new)
+
         tb.addWidget(title)
         tb.addStretch()
         tb.addWidget(self.add_btn)
         left.addWidget(topbar)
 
-        # área de scroll com os cards
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -389,17 +500,14 @@ class FilamentPageWidget(QWidget):
         left_widget.setLayout(left)
         root_layout.addWidget(left_widget, stretch=1)
 
-        # coluna direita — formulário (começa escondida)
         self.form = FilamentForm()
         self.form.hide()
         self.form.saved.connect(self._on_form_saved)
         self.form.cancelled.connect(self._close_form)
         root_layout.addWidget(self.form)
 
-    # ── lista ──
     def _rebuild_list(self):
         """Reconstrói todos os cards a partir de self._filaments."""
-        # remove cards antigos
         for card in self._cards:
             self.list_layout.removeWidget(card)
             card.deleteLater()
@@ -408,15 +516,12 @@ class FilamentPageWidget(QWidget):
         self.empty_lbl.setVisible(len(self._filaments) == 0)
 
         for f in self._filaments:
-            card = FilamentCard(f)
-            card.edit_requested.connect(self._on_edit)
-            card.delete_requested.connect(self._on_delete)
-            # insere antes do stretch
-            self.list_layout.insertWidget(
-                self.list_layout.count() - 1, card)
-            self._cards.append(card)
+            row = FilamentCardRow(f)
+            row.edit_requested.connect(self._on_edit)
+            row.delete_requested.connect(self._on_delete)
+            self.list_layout.insertWidget(self.list_layout.count() - 1, row)
+            self._cards.append(row)
 
-    # ── ações ──
     def _on_new(self):
         if self.form.isHidden():
             self.form.load(None)

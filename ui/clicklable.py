@@ -33,5 +33,5 @@ class ColoredDot(QFrame):
     @Slot(str)
     def handle_data(self, data):
         self.setStyleSheet(f"background:{data};"
-                           f" border-radius:9px; "
+                           f"border-radius: 9px;"
                            f"border:0.5px solid #D3D1C7;")
