@@ -33,8 +33,9 @@ class Print3DManager(QMainWindow):
         self.stack.addWidget(self.tela_filamentos)
         main_layout.addWidget(self.stack)
 
-    def _filament_manager(self):
-        self.stack.setCurrentIndex(1)
+    def _navigate(self, value):
+        print(f"{value=}")
+        self.stack.setCurrentIndex(value)
 
    
 if __name__ == "__main__":

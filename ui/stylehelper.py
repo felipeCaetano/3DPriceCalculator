@@ -127,6 +127,18 @@ QPushButton#PrimaryButton:hover {
     background-color: #F3F4F6;
     color: #FCFCFA;
 }
+
+QSpinBox {
+    border: 0.5px solid #B4B2A9;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 12px;
+    background: white;
+    color: #2C2C2A;
+}
+QSpinBox:focus { border-color: #185FA5; }
+QSpinBox:up-button { subcontrol-origin border; width: 18px; }
+QSpinBox:down-button { subcontrol-origin border; width: 18px; }
 """
 
 def make_divider():
@@ -194,7 +206,7 @@ def styled_combo(options):
 
 def form_label(text):
     lbl = QLabel(text)
-    lbl.setStyleSheet("font-size: 14px; color: #5F5E5A; font-weight: 500;")
+    lbl.setStyleSheet("font-size: 14px; color: #5F5E5A; font-weight: 700;")
     return lbl
 
 

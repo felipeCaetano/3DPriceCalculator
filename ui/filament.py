@@ -1,6 +1,6 @@
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtGui import QPainter, QColor
-from PySide6.QtWidgets import (
+from PySide6.QtWidgets import (QDateEdit,
     QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QProgressBar, QPushButton, QScrollArea, QSpinBox, QStyle,
     QStyleOption,
@@ -174,6 +174,7 @@ class FilamentForm(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.setStyleSheet(STYLE_SHEET)
         self._filament: FilamentData | None = None
         self.setFixedWidth(320)
         self.setObjectName("FilamentForm")
@@ -184,6 +185,20 @@ class FilamentForm(QWidget):
 
         self.form_title = QLabel("Novo filamento")
         self.form_title.setObjectName("MenuTitle")
+
+        self.tipo_combo = styled_combo(sorted(self.TIPOS))
+        self.acabamento_combo = styled_combo(sorted(self.ACABAMENTOS))
+        self.marca_combo = styled_combo(sorted(self.MARCAS))
+        self.cor_input = styled_input("Ex: Azul royal")
+        self.cor_hex_input = styled_input("#000000")
+        self.pick_btn = ColoredDot()
+        self.preco_input = styled_input("89,90")
+        self.quantidade_input = QSpinBox()
+        self.date_opened = QDateEdit(calendarPopup=True)
+        self.valid_date = QDateEdit(calendarPopup=True)
+        self.cancel_btn = QPushButton("Cancelar")
+        self.save_btn = QPushButton("Salvar")
+
         root.addWidget(self.form_title)
         root.addWidget(make_divider())
 
@@ -193,19 +208,16 @@ class FilamentForm(QWidget):
         c1 = QVBoxLayout()
         c1.setSpacing(4)
         c1.addWidget(form_label("Tipo"))
-        self.tipo_combo = styled_combo(sorted(self.TIPOS))
         c1.addWidget(self.tipo_combo)
 
         c2 = QVBoxLayout()
         c2.setSpacing(4)
         c2.addWidget(form_label("Acabamento"))
-        self.acabamento_combo = styled_combo(sorted(self.ACABAMENTOS))
         c2.addWidget(self.acabamento_combo)
 
         c3 = QVBoxLayout()
         c3.setSpacing(4)
         c3.addWidget(form_label("Marca"))
-        self.marca_combo = styled_combo(sorted(self.MARCAS))
         c3.addWidget(self.marca_combo)
 
         row1.addLayout(c1)
@@ -215,7 +227,6 @@ class FilamentForm(QWidget):
 
         # nome da cor
         root.addWidget(form_label("Nome da cor"))
-        self.cor_input = styled_input("Ex: Azul royal")
         root.addWidget(self.cor_input)
 
         # cor hex (color picker)
@@ -224,9 +235,7 @@ class FilamentForm(QWidget):
         cor_columun = QVBoxLayout()
         cor_columun.setSpacing(2)
         cor_columun.addWidget(form_label("Cor (hex)"))
-        self.cor_hex_input = styled_input("#000000")
-
-        self.pick_btn = ColoredDot()
+        
         self.pick_btn.handle_data("#000000")
         self.pick_btn.setFixedSize(32, 42)
         self.pick_btn.clicked.connect(self._pick_color)
@@ -243,35 +252,37 @@ class FilamentForm(QWidget):
         preco_column =  QVBoxLayout()
         preco_column.setSpacing(2)
         preco_column.addWidget(form_label("Preço/kg (R$)"))
-        self.preco_input = styled_input("89,90")
         preco_column.addWidget(self.preco_input)
         preco_quant_row.addLayout(preco_column)
 
         quantidade_column = QVBoxLayout()
         quantidade_column.setSpacing(2)
         quantidade_column.addWidget(form_label("Quantidade"))
-        self.quantidade_input = QSpinBox()
-        self.quantidade_input.setStyleSheet("""
-                QSpinBox {
-                    border: 0.5px solid #B4B2A9;
-                    border-radius: 6px;
-                    padding: 0 8px;
-                    font-size: 12px;
-                    background: white;
-                    color: #2C2C2A;
-                }
-                QSpinBox:focus { border-color: #185FA5; }
-                QSpinBox:up-button { subcontrol-origin border;
-                width: 18px; }
-                QSpinBox:down-button { subcontrol-origin border;
-                width: 18px; }
-            """)
         self.quantidade_input.setFixedHeight(28)
         self.quantidade_input.setMinimum(1)
         self.quantidade_input.setSuffix(' Bobinas')
         quantidade_column.addWidget(self.quantidade_input)
         preco_quant_row.addLayout(quantidade_column)
         root.addLayout(preco_quant_row)
+
+        #data de abertura e vencimento da bobina:
+        self.date_opened.setDisplayFormat("dd-MM-yyyy")
+        self.date_opened.setMinimumDate(QDate(2024, 5, 1))
+        self.valid_date.setDisplayFormat("dd-MM-yyyy")
+        self.valid_date.setMinimumDate(QDate(2024, 5, 1))
+        dates_layout = QHBoxLayout()
+        dates_layout.setSpacing(8)
+        open_date_column = QVBoxLayout()
+        open_date_column.setSpacing(4)
+        open_date_column.addWidget(form_label("Aberto em:"))
+        open_date_column.addWidget(self.date_opened)
+        dates_layout.addLayout(open_date_column)
+        valid_date_column = QVBoxLayout()
+        valid_date_column.setSpacing(4)
+        valid_date_column.addWidget(form_label("Válido até:"))
+        valid_date_column.addWidget(self.valid_date)
+        dates_layout.addLayout(valid_date_column)
+        root.addLayout(dates_layout)
 
         # peso bobina + peso usado
         row2 = QHBoxLayout()
@@ -298,10 +309,8 @@ class FilamentForm(QWidget):
         # botões
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
-        self.cancel_btn = QPushButton("Cancelar")
         self.cancel_btn.setFixedHeight(32)
         self.cancel_btn.setObjectName("FilamentCancelButton")
-        self.save_btn = QPushButton("Salvar")
         self.save_btn.setFixedHeight(32)
         self.save_btn.setObjectName("FilamentSaveButton")
         self.cancel_btn.clicked.connect(self.cancelled.emit)

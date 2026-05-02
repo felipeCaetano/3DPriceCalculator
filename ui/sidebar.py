@@ -1,3 +1,5 @@
+from functools import partial
+
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QVBoxLayout, QLabel,
@@ -28,19 +30,19 @@ class Sidebar(QFrame):
 
         # Menu Items
         labels = [
-            ("PRINCIPAL", False, None, None),
-            ("Dashboard", True,  "res/img/icons/dashboard.png", None),
-            ("Nova peça", False,  "res/img/icons/3dpiece.png", None),
-            ("Histórico", False, "res/img/icons/history.png", None),
-            ("Divider", False, None, None),
-            ("ESTOQUE", False, None, None),
-            ("Filamentos", False, "res/img/icons/filament.png", parent._filament_manager),
-            ("Relatórios", False, "res/img/icons/report.png", None),
-            ("Divider", False, None, None),
-            ("Configurações", False, "res/img/icons/settings.png", None)
+            ("PRINCIPAL", False, None, None, None),
+            ("Dashboard", True,  "res/img/icons/dashboard.png", parent._navigate, 0),
+            ("Nova peça", False,  "res/img/icons/3dpiece.png", None, None),
+            ("Histórico", False, "res/img/icons/history.png", None, None),
+            ("Divider", False, None, None, None),
+            ("ESTOQUE", False, None, None, None),
+            ("Filamentos", False, "res/img/icons/filament.png", parent._navigate, 1),
+            ("Relatórios", False, "res/img/icons/report.png", None, None),
+            ("Divider", False, None, None, None),
+            ("Configurações", False, "res/img/icons/settings.png", None, None)
         ]
 
-        for text, is_active, icon_path, callback in labels:
+        for text, is_active, icon_path, callback, index in labels:
             if text in ["PRINCIPAL", "ESTOQUE"]:
                 lbl = QLabel(text)
                 lbl.setStyleSheet(
@@ -59,9 +61,9 @@ class Sidebar(QFrame):
                 btn.setIcon(icon)
                 btn.setIconSize(QSize(18, 18))
                 if callback:
-                    btn.clicked.connect(callback)
+                    btn.clicked.connect(partial(callback, index))
                 btn.setCursor(Qt.PointingHandCursor)
                 sidebar_layout.addWidget(btn)
 
-        sidebar_layout.addStretch()
+        sidebar_layout.addStretch() 
 
