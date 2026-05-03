@@ -37,6 +37,14 @@ QMainWindow {
     border-radius: 10px;
     padding: 10px;
 }
+QDateEdit {
+                border: 1px solid #cccccc;
+                border-radius: 8px;
+                padding: 4px;
+                background-color: white;
+            }
+QDateEdit::drop-down {border: none;
+            }
 QLabel{
     font-size: 11px; color: #5F5E5A;
     }

@@ -151,8 +151,7 @@ class FilamentCard(QFrame):
         self.progress_bar.setValue(value)
         # chama explicitamente — setValue pode não disparar valueChanged
         # se o valor for igual ao anterior
-        self._update_progressbar_text_color(value)
-       
+        self._update_progressbar_text_color(value)    
 
 
 class FilamentForm(QWidget):
@@ -178,14 +177,10 @@ class FilamentForm(QWidget):
         self._filament: FilamentData | None = None
         self.setFixedWidth(320)
         self.setObjectName("FilamentForm")
-
-        root = QVBoxLayout(self)
-        root.setContentsMargins(16, 16, 16, 16)
-        root.setSpacing(4)
-
+        root = self._setup_layout(QVBoxLayout, (16,16,16,16), 4)
+        self.setLayout(root)
         self.form_title = QLabel("Novo filamento")
         self.form_title.setObjectName("MenuTitle")
-
         self.tipo_combo = styled_combo(sorted(self.TIPOS))
         self.acabamento_combo = styled_combo(sorted(self.ACABAMENTOS))
         self.marca_combo = styled_combo(sorted(self.MARCAS))
@@ -195,129 +190,148 @@ class FilamentForm(QWidget):
         self.preco_input = styled_input("89,90")
         self.quantidade_input = QSpinBox()
         self.date_opened = QDateEdit(calendarPopup=True)
+        self.date_opened.setFixedHeight(28)
         self.valid_date = QDateEdit(calendarPopup=True)
+        self.valid_date.setFixedHeight(28)
         self.cancel_btn = QPushButton("Cancelar")
         self.save_btn = QPushButton("Salvar")
-
         root.addWidget(self.form_title)
         root.addWidget(make_divider())
 
-        # tipo + marca
-        row1 = QHBoxLayout()
-        row1.setSpacing(8)
-        c1 = QVBoxLayout()
-        c1.setSpacing(4)
-        c1.addWidget(form_label("Tipo"))
-        c1.addWidget(self.tipo_combo)
-
-        c2 = QVBoxLayout()
-        c2.setSpacing(4)
-        c2.addWidget(form_label("Acabamento"))
-        c2.addWidget(self.acabamento_combo)
-
-        c3 = QVBoxLayout()
-        c3.setSpacing(4)
-        c3.addWidget(form_label("Marca"))
-        c3.addWidget(self.marca_combo)
-
-        row1.addLayout(c1)
-        row1.addLayout(c2)
-        row1.addLayout(c3)
+        row1 = self._create_row1_layout()
         root.addLayout(row1)
 
-        # nome da cor
         root.addWidget(form_label("Nome da cor"))
         root.addWidget(self.cor_input)
+        color_row = self._create_colorrow_layout()
+        root.addLayout(color_row)
 
-        # cor hex (color picker)
-        cor_row = QHBoxLayout()
-        cor_row.setSpacing(2)
-        cor_columun = QVBoxLayout()
-        cor_columun.setSpacing(2)
-        cor_columun.addWidget(form_label("Cor (hex)"))
-        
-        self.pick_btn.handle_data("#000000")
-        self.pick_btn.setFixedSize(32, 42)
-        self.pick_btn.clicked.connect(self._pick_color)
-        self.cor_hex_input.textChanged.connect(self._on_hex_changed)
-
-        cor_row.addWidget(self.pick_btn)
-        cor_columun.addWidget(self.cor_hex_input)
-        cor_row.addLayout(cor_columun)
-        root.addLayout(cor_row)
-
-        # preço/kg e quantidade
-        preco_quant_row = QHBoxLayout()
-        preco_quant_row.setSpacing(2)
-        preco_column =  QVBoxLayout()
-        preco_column.setSpacing(2)
-        preco_column.addWidget(form_label("Preço/kg (R$)"))
-        preco_column.addWidget(self.preco_input)
-        preco_quant_row.addLayout(preco_column)
-
-        quantidade_column = QVBoxLayout()
-        quantidade_column.setSpacing(2)
-        quantidade_column.addWidget(form_label("Quantidade"))
-        self.quantidade_input.setFixedHeight(28)
-        self.quantidade_input.setMinimum(1)
-        self.quantidade_input.setSuffix(' Bobinas')
-        quantidade_column.addWidget(self.quantidade_input)
-        preco_quant_row.addLayout(quantidade_column)
+        preco_quant_row =self._create_price_stock_layout()
         root.addLayout(preco_quant_row)
 
-        #data de abertura e vencimento da bobina:
-        self.date_opened.setDisplayFormat("dd-MM-yyyy")
-        self.date_opened.setMinimumDate(QDate(2024, 5, 1))
-        self.valid_date.setDisplayFormat("dd-MM-yyyy")
-        self.valid_date.setMinimumDate(QDate(2024, 5, 1))
-        dates_layout = QHBoxLayout()
-        dates_layout.setSpacing(8)
-        open_date_column = QVBoxLayout()
-        open_date_column.setSpacing(4)
-        open_date_column.addWidget(form_label("Aberto em:"))
-        open_date_column.addWidget(self.date_opened)
-        dates_layout.addLayout(open_date_column)
-        valid_date_column = QVBoxLayout()
-        valid_date_column.setSpacing(4)
-        valid_date_column.addWidget(form_label("Válido até:"))
-        valid_date_column.addWidget(self.valid_date)
-        dates_layout.addLayout(valid_date_column)
+        dates_layout = self._setup_date_section()
         root.addLayout(dates_layout)
 
-        # peso bobina + peso usado
-        row2 = QHBoxLayout()
-        row2.setSpacing(8)
-        c3 = QVBoxLayout()
-        c3.setSpacing(4)
-        c3.addWidget(form_label("Peso bobina (g)"))
-        self.bobina_input = styled_input("1000")
-        c3.addWidget(self.bobina_input)
-
-        c4 = QVBoxLayout()
-        c4.setSpacing(4)
-        c4.addWidget(form_label("Já usado (g)"))
-        self.usado_input = styled_input("0")
-        c4.addWidget(self.usado_input)
-
-        row2.addLayout(c3)
-        row2.addLayout(c4)
+        row2 = self._create_bobin_weight()
         root.addLayout(row2)
-
         root.addStretch()
         root.addWidget(make_divider())
 
-        # botões
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(8)
-        self.cancel_btn.setFixedHeight(32)
-        self.cancel_btn.setObjectName("FilamentCancelButton")
-        self.save_btn.setFixedHeight(32)
-        self.save_btn.setObjectName("FilamentSaveButton")
-        self.cancel_btn.clicked.connect(self.cancelled.emit)
-        self.save_btn.clicked.connect(self._on_save)
+        btn_row = self._create_btn_row()
+        root.addLayout(btn_row)
+
+    def _create_bobin_weight(self):
+        row2 = self._setup_layout(QHBoxLayout, spacing=8)
+    
+        inputs_config = [
+            ("bobina_input", "Peso bobina (g)", "1000"),
+            ("usado_input", "Já usado (g)", "0")
+        ]
+
+        for attr_name, label_text, default_val in inputs_config:
+            column = self._setup_layout(QVBoxLayout, spacing=4)
+            column.addWidget(form_label(label_text))
+            input_widget = styled_input(default_val)
+            setattr(self, attr_name, input_widget)
+            column.addWidget(input_widget)
+            row2.addLayout(column)
+
+        return row2
+    
+    def _create_btn_row(self):
+        btn_row = self._setup_layout(QHBoxLayout, spacing=8)
+        self._setup_buttons(self.cancel_btn, "FilamentCancelButton", 32, self.cancelled.emit)
+        self._setup_buttons(self.save_btn, "FilamentSaveButton", 32, self._on_save)
         btn_row.addWidget(self.cancel_btn)
         btn_row.addWidget(self.save_btn)
-        root.addLayout(btn_row)
+        return btn_row
+
+    def _create_colorrow_layout(self):
+        cor_row = self._setup_layout(QHBoxLayout, spacing=8)
+        cor_column = self._setup_layout(QVBoxLayout, spacing=4)
+        self._setup_coloreddot("#000000", 32, 42, self._pick_color)
+        self.cor_hex_input.textChanged.connect(self._on_hex_changed)
+        cor_column.addWidget(form_label("Cor (hex)"))
+        cor_column.addWidget(self.cor_hex_input)
+        cor_row.addWidget(self.pick_btn)
+        cor_row.addLayout(cor_column)
+        return cor_row
+
+    def _create_price_stock_layout(self):
+        preco_quant_row = self._setup_layout(QHBoxLayout, spacing=2)
+        preco_column = self._setup_layout(QVBoxLayout, spacing=2)
+        preco_column.addWidget(form_label("Preço/kg (R$)"))
+        preco_column.addWidget(self.preco_input)
+        preco_quant_row.addLayout(preco_column)
+        quantidade_column = self._setup_layout(QVBoxLayout, spacing=2)
+        quantidade_column.addWidget(form_label("Quantidade"))
+        self._setup_spinbox()
+        quantidade_column.addWidget(self.quantidade_input)
+        preco_quant_row.addLayout(quantidade_column)
+        return preco_quant_row
+
+    def _create_row1_layout(self):
+        row1 = self._setup_layout(QHBoxLayout, spacing=8)
+        items = [
+            (self.tipo_combo, "Tipo"),
+            (self.acabamento_combo, "Acabamento"),
+            (self.marca_combo, "Marca")
+        ]
+
+        for widget, label_text in items:
+            column = self._setup_layout(QVBoxLayout, spacing=4)
+            column.addWidget(form_label(label_text))
+            column.addWidget(widget)
+            row1.addLayout(column)
+        return row1
+
+    def _setup_buttons(self, button, objectname: str=None, height:int=24, callback=None):
+        if objectname:
+            button.setObjectName(objectname)
+        button.setFixedHeight(height)
+        if callback:
+            button.clicked.connect(callback)
+
+
+    def _setup_coloreddot(self, color, width, height, callback):
+        self.pick_btn.handle_data(color)
+        self.pick_btn.setFixedSize(width, height)
+        self.pick_btn.clicked.connect(callback)
+
+    def _setup_date_section(self):
+        min_date = QDate(2024, 5, 1)
+        dates_layout = self._setup_layout(QHBoxLayout, spacing=8)
+
+        date_fields = [
+            (self.date_opened, "Aberto em:"),
+            (self.valid_date, "Válido até:")
+        ]
+
+        for widget, label_text in date_fields:
+            widget.setDisplayFormat("dd-MM-yyyy")
+            widget.setMinimumDate(min_date)
+            widget.setCalendarPopup(True) # Opcional: torna o input mais amigáve
+            
+            column = self._setup_layout(QVBoxLayout, spacing=4)
+            column.addWidget(form_label(label_text))
+            column.addWidget(widget)
+            dates_layout.addLayout(column)
+        return dates_layout
+        
+
+    def _setup_layout(
+        self, layout, margins=(0, 0, 0, 0), spacing=0, addstretch=False):
+        lout = layout()
+        lout.setContentsMargins(*margins)
+        lout.setSpacing(spacing)
+        if addstretch:
+            lout.addStretch()
+        return lout
+    
+    def _setup_spinbox(self):
+        self.quantidade_input.setFixedHeight(28)
+        self.quantidade_input.setMinimum(1)
+        self.quantidade_input.setSuffix(' Bobinas')
 
     def _populate_form(self, filament):
         if filament is None:
@@ -449,71 +463,80 @@ class FilamentPageWidget(QWidget):
         self._filaments: list[FilamentData] = []
         self._cards: list[FilamentCard] = []
         self.setStyleSheet(STYLE_SHEET)
-
-        root_layout = QHBoxLayout(self)
-        root_layout.setContentsMargins(0, 0, 0, 0)
-        root_layout.setSpacing(0)
-
-        left = QVBoxLayout()
-        left.setContentsMargins(0, 0, 0, 0)
-        left.setSpacing(0)
-
-        topbar = QWidget()
-        topbar.setObjectName("FilamentTopBar")
-        topbar.setFixedHeight(56)
-
-        tb = QHBoxLayout(topbar)
-        tb.setContentsMargins(20, 0, 20, 0)
-        title = QLabel("Filamentos")
-        title.setObjectName("MenuTitle")
         self.add_btn = QPushButton("+ Novo filamento")
-        self.add_btn.setObjectName("FilamentNew")
-        self.add_btn.setFixedHeight(32)
-        
         self.edit_btn = QPushButton("Editar")
-        self.edit_btn.setFixedHeight(32)
         self.delete_btn = QPushButton("Deletar")
-        self.delete_btn.setFixedHeight(32)
-
-        self.add_btn.clicked.connect(self._on_new)
-
-        tb.addWidget(title)
-        tb.addStretch()
-        tb.addWidget(self.add_btn)
-        left.addWidget(topbar)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setStyleSheet("background: #F5F4F0;")
-
         self.list_container = QWidget()
         self.list_container.setStyleSheet("background: #F5F4F0;")
-        self.list_layout = QVBoxLayout(self.list_container)
-        self.list_layout.setContentsMargins(16, 8, 16, 8)
-        self.list_layout.setSpacing(8)
-        self.list_layout.addStretch()
-
-        # estado vazio
         self.empty_lbl = QLabel(
             "Nenhum filamento cadastrado.\nClique em \"+ Novo filamento\""
         )
-        self.empty_lbl.setAlignment(Qt.AlignCenter)
-        self.empty_lbl.setObjectName("MenuSubtitle")
-        self.list_layout.insertWidget(0, self.empty_lbl)
-
-        scroll.setWidget(self.list_container)
-        left.addWidget(scroll)
-
-        left_widget = QWidget()
-        left_widget.setLayout(left)
-        root_layout.addWidget(left_widget, stretch=1)
-
         self.form = FilamentForm()
         self.form.hide()
         self.form.saved.connect(self._on_form_saved)
         self.form.cancelled.connect(self._close_form)
+
+        root_layout = self._setup_layout(QHBoxLayout)
+        self.setLayout(root_layout)
+        left = self._setup_layout(QVBoxLayout)
+        topbar = self._set_topbar("FilamentTopBar", 56)
+        topbar_layout = self._setup_layout(QHBoxLayout, (20, 0, 20, 0))
+        topbar.setLayout(topbar_layout)
+        title = QLabel("Filamentos")
+        title.setObjectName("MenuTitle")
+        topbar_layout.addWidget(title)
+        topbar_layout.addStretch()
+        topbar_layout.addWidget(self.add_btn)
+        left.addWidget(topbar)
+       
+        self._setup_buttons(self.add_btn, "FilamentNew", 32)
+        self._setup_buttons(self.edit_btn, None, 32)
+
+        self.add_btn.clicked.connect(self._on_new)
+
+        scroll = self._setup_scrollarea()
+        scroll.setWidget(self.list_container)
+        left.addWidget(scroll)
+        
+        self.list_layout = self._setup_layout(
+            QVBoxLayout, margins=(16, 8, 16, 8), spacing=8, addstretch=True)
+        self.list_layout.addWidget(self.list_container)
+
+        self.empty_lbl.setAlignment(Qt.AlignCenter)
+        self.empty_lbl.setObjectName("MenuSubtitle")
+        self.list_layout.insertWidget(0, self.empty_lbl)
+
+        left_widget = QWidget()
+        left_widget.setLayout(left)
+        root_layout.addWidget(left_widget, stretch=1)
         root_layout.addWidget(self.form)
+
+    def _setup_buttons(self, button, objectname: str=None, height:int=24):
+        if objectname:
+            button.setObjectName(objectname)
+        button.setFixedHeight(height)
+
+    def _setup_layout(
+        self, layout, margins=(0, 0, 0, 0), spacing=0, addstretch=False):
+        lout = layout()
+        lout.setContentsMargins(*margins)
+        lout.setSpacing(spacing)
+        if addstretch:
+            lout.addStretch()
+        return lout
+    
+    def _setup_scrollarea(self):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet("background: #F5F4F0;")
+        return scroll
+
+    def _set_topbar(self, objectname, height):
+        topbar = QWidget()
+        topbar.setObjectName(objectname)
+        topbar.setFixedHeight(height)
+        return topbar
 
     def _rebuild_list(self):
         """Reconstrói todos os cards a partir de self._filaments."""
