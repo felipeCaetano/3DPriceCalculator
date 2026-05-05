@@ -40,7 +40,6 @@ class FilamentCard(QFrame):
         self.filament = filamento
         self.setProperty("class", "Card")
         self.setFixedHeight(128)
-
         self.name_lbl = QLabel("Filamento", objectName="CardTitle")
         self.filament_type = QLabel("PLA")
         self.filament_acabamento = QLabel("Hyper Speed")
@@ -52,7 +51,6 @@ class FilamentCard(QFrame):
         self.filament_color.setFixedSize(40, 40)
         self.progress_bar = QProgressBar()
         self.progress_bar.valueChanged.connect(self._update_progressbar_text_color)
-
         self._setup_layout()
         self._setup_progressbar()
 
@@ -97,18 +95,6 @@ class FilamentCard(QFrame):
         self.progress_bar.setValue(64)
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFixedHeight(14)
-        self.progress_bar.setStyleSheet(
-            "QProgressBar {"
-            " border-radius: 4px;"
-            " background: #E5E5E3;"
-            " text-align: center;"
-            " font-size: 10px;"
-            "}"
-            "QProgressBar::chunk {"
-            f" background: {self._chunk_color};"
-            " border-radius: 4px;"
-            "}"
-        )
 
     def _update_progressbar_text_color(self, value: int):
         """Troca a cor do texto para contraste com o chunk."""
@@ -121,17 +107,8 @@ class FilamentCard(QFrame):
             text_color = "white"
         
         self.progress_bar.setStyleSheet(
-            "QProgressBar {"
-            " border-radius: 4px;"
-            " background: #E5E5E3;"
             f" color: {text_color};"
-            " text-align: center;"
-            " font-size: 10px;"
-            "}"
-            "QProgressBar::chunk {"
-            " border-radius: 4px;"
-            f" background: {self._chunk_color};"
-            "}"
+            f" background: {self._chunk_color};"  
         )
 
     def refresh(self):
@@ -292,7 +269,6 @@ class FilamentForm(QWidget):
         if callback:
             button.clicked.connect(callback)
 
-
     def _setup_coloreddot(self, color, width, height, callback):
         self.pick_btn.handle_data(color)
         self.pick_btn.setFixedSize(width, height)
@@ -310,7 +286,7 @@ class FilamentForm(QWidget):
         for widget, label_text in date_fields:
             widget.setDisplayFormat("dd-MM-yyyy")
             widget.setMinimumDate(min_date)
-            widget.setCalendarPopup(True) # Opcional: torna o input mais amigáve
+            #widget.setCalendarPopup(True) # Opcional: torna o input mais amigáve
             
             column = self._setup_layout(QVBoxLayout, spacing=4)
             column.addWidget(form_label(label_text))
@@ -318,7 +294,6 @@ class FilamentForm(QWidget):
             dates_layout.addLayout(column)
         return dates_layout
         
-
     def _setup_layout(
         self, layout, margins=(0, 0, 0, 0), spacing=0, addstretch=False):
         lout = layout()
@@ -499,12 +474,13 @@ class FilamentPageWidget(QWidget):
         left.addWidget(scroll)
         
         self.list_layout = self._setup_layout(
-            QVBoxLayout, margins=(16, 8, 16, 8), spacing=8, addstretch=True)
-        self.list_layout.addWidget(self.list_container)
+            QVBoxLayout, margins=(16, 8, 16, 8), spacing=8)
+        self.list_container.setLayout(self.list_layout)
 
         self.empty_lbl.setAlignment(Qt.AlignCenter)
         self.empty_lbl.setObjectName("MenuSubtitle")
         self.list_layout.insertWidget(0, self.empty_lbl)
+        self.list_layout.addStretch()
 
         left_widget = QWidget()
         left_widget.setLayout(left)

@@ -18,7 +18,7 @@ QMainWindow {
 
 #FilamentForm {
     background: white;
-    border-left: 0.5px solid #D3D1C7;
+    border-left: 1px solid #D3D1C7;
 }
 
 #ContentArea {
@@ -38,13 +38,14 @@ QMainWindow {
     padding: 10px;
 }
 QDateEdit {
-                border: 1px solid #cccccc;
-                border-radius: 8px;
-                padding: 4px;
-                background-color: white;
-            }
-QDateEdit::drop-down {border: none;
-            }
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    padding: 4px;
+    background-color: white;
+}
+QDateEdit::drop-down {
+    border: none;
+}
 QLabel{
     font-size: 11px; color: #5F5E5A;
     }
@@ -80,7 +81,7 @@ QPushButton#MenuButton[active="true"] {
 }
 
 QPushButton#FilamentCancelButton {
-    border: 0.5px solid #B4B2A9; border-radius: 6px;
+    border: 1px solid #B4B2A9; border-radius: 6px;
     padding: 0 14px; font-size: 12px;
     background: transparent; color: #2C2C2A;
 }
@@ -120,9 +121,19 @@ QLineEdit, QTextEdit {
     color: #2C2C2A;
 }
 
+QProgressBar {
+    border-radius: 4px;
+    background: #E5E5E3;
+    text-align: center;
+    font-size: 10px;
+}
+QProgressBar::chunk {
+    border-radius: 4px;
+}
+
 QPushButton#PrimaryButton {
     background-color: #FFFFFF;
-    border: 0.5px solid #B4B2A9;
+    border: 1px solid #B4B2A9;
     border-radius: 6px;
     padding: 0px 14px;
     font-size: 14px;
@@ -137,7 +148,7 @@ QPushButton#PrimaryButton:hover {
 }
 
 QSpinBox {
-    border: 0.5px solid #B4B2A9;
+    border: 1px solid #B4B2A9;
     border-radius: 6px;
     padding: 0 8px;
     font-size: 12px;
@@ -145,8 +156,8 @@ QSpinBox {
     color: #2C2C2A;
 }
 QSpinBox:focus { border-color: #185FA5; }
-QSpinBox:up-button { subcontrol-origin border; width: 18px; }
-QSpinBox:down-button { subcontrol-origin border; width: 18px; }
+QSpinBox:up-button { subcontrol-origin: border; width: 18px; }
+QSpinBox:down-button { subcontrol-origin: border; width: 18px; }
 """
 
 def make_divider():
@@ -175,7 +186,7 @@ def styled_input(placeholder=""):
     w.setFixedHeight(28)
     w.setStyleSheet("""
         QLineEdit {
-            border: 0.5px solid #B4B2A9;
+            border: 1px solid #B4B2A9;
             border-radius: 6px;
             padding: 0 8px;
             font-size: 12px;
@@ -189,12 +200,11 @@ def styled_input(placeholder=""):
 
 def styled_combo(options):
     w = QComboBox()
-    for o in options:
-        w.addItem(o)
+    w.addItems(options)
     w.setFixedHeight(28)
     w.setStyleSheet("""
         QComboBox {
-            border: 0.5px solid #B4B2A9;
+            border: 1px solid #B4B2A9;
             border-radius: 6px;
             padding: 0 8px;
             font-size: 12px;
