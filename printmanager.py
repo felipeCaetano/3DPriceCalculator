@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QStackedWidget,
 
 from ui.dashboard import DashBoard
 from ui.filament import FilamentPageWidget
+from ui.settings import SettingsWidget
 from ui.sidebar import Sidebar
 from ui.stylehelper import STYLE_SHEET
 
@@ -29,12 +30,13 @@ class Print3DManager(QMainWindow):
         main_layout.addWidget(self.sidebar)
         self.tela_dashboard = DashBoard()
         self.tela_filamentos = FilamentPageWidget()
+        self.tela_config = SettingsWidget()
         self.stack.addWidget(self.tela_dashboard)
         self.stack.addWidget(self.tela_filamentos)
+        self.stack.addWidget(self.tela_config)
         main_layout.addWidget(self.stack)
 
     def _navigate(self, value):
-        print(f"{value=}")
         self.stack.setCurrentIndex(value)
 
    

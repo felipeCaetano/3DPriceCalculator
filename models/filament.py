@@ -12,7 +12,7 @@ class FilamentData:
     peso_g: float = 0.0          # quanto desta cor foi usado na peça
     peso_bobina_g: float = 1000.0
     peso_usado_g: float = 380.0
-    data_fabricacao: str = ""
+    data_validade: str = ""
     data_abertura: str = ""
     quantidade: int = 0
 

@@ -39,7 +39,7 @@ class Sidebar(QFrame):
             ("Filamentos", False, "res/img/icons/filament.png", parent._navigate, 1),
             ("Relatórios", False, "res/img/icons/report.png", None, None),
             ("Divider", False, None, None, None),
-            ("Configurações", False, "res/img/icons/settings.png", None, None)
+            ("Configurações", False, "res/img/icons/settings.png", parent._navigate, 2)
         ]
 
         for text, is_active, icon_path, callback, index in labels:

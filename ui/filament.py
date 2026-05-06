@@ -49,6 +49,7 @@ class FilamentCard(QFrame):
         self.filament_color.handle_data("#2563EB")
         self.filament_color.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.filament_color.setFixedSize(40, 40)
+        self.filament_data_validade = QLabel("12/12/2036")
         self.progress_bar = QProgressBar()
         self.progress_bar.valueChanged.connect(self._update_progressbar_text_color)
         self._setup_layout()
@@ -82,8 +83,10 @@ class FilamentCard(QFrame):
         grid.addWidget(self.filament_acabamento, 1, 1)
         grid.addWidget(form_label("Marca"), 0, 2)
         grid.addWidget(self.filament_brand, 1, 2)
-        grid.addWidget(form_label("Preço/kg"), 0, 3)
-        grid.addWidget(self.filament_price, 1, 3)
+        grid.addWidget(form_label("Válido até:"), 0, 3)
+        grid.addWidget(self.filament_data_validade, 1, 3)
+        grid.addWidget(form_label("Preço/kg"), 0, 4)
+        grid.addWidget(self.filament_price, 1, 4)
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 2)
         grid.setColumnStretch(2, 1)
@@ -98,8 +101,6 @@ class FilamentCard(QFrame):
 
     def _update_progressbar_text_color(self, value: int):
         """Troca a cor do texto para contraste com o chunk."""
-        # acima de 50% o texto fica sobre o chunk (azul) → branco
-        # abaixo de 50% o texto fica sobre o fundo (cinza) → preto
         text_color = "white" if value > 50 else "#2C2C2A"
         if self._chunk_color == "#ffffff":
             text_color = "black"
@@ -125,9 +126,8 @@ class FilamentCard(QFrame):
         )
         self.filament_color.handle_data(self.filament.cor_str or "#888780")
         value = self.filament.bobina_restante_pct
+        self.data_validade.setDate(QDate.currentDate())
         self.progress_bar.setValue(value)
-        # chama explicitamente — setValue pode não disparar valueChanged
-        # se o valor for igual ao anterior
         self._update_progressbar_text_color(value)    
 
 
@@ -145,7 +145,7 @@ class FilamentForm(QWidget):
     ]
     MARCAS = [
         "Polymaker", "Bambu", "Hatchbox", "Creality", "Anycubic",
-        "F3D", "Elegoo", "eSUN", "MultiLaser", "Yousu", "Outra"
+        "F3D", "Elegoo", "eSUN", "MultiLaser", "Yousu", "Volt3D"
     ]
 
     def __init__(self):
@@ -160,7 +160,9 @@ class FilamentForm(QWidget):
         self.form_title.setObjectName("MenuTitle")
         self.tipo_combo = styled_combo(sorted(self.TIPOS))
         self.acabamento_combo = styled_combo(sorted(self.ACABAMENTOS))
-        self.marca_combo = styled_combo(sorted(self.MARCAS))
+        self.MARCAS = sorted(self.MARCAS)
+        self.MARCAS.append("Outras")
+        self.marca_combo = styled_combo(self.MARCAS)
         self.cor_input = styled_input("Ex: Azul royal")
         self.cor_hex_input = styled_input("#000000")
         self.pick_btn = ColoredDot()
@@ -212,7 +214,6 @@ class FilamentForm(QWidget):
             setattr(self, attr_name, input_widget)
             column.addWidget(input_widget)
             row2.addLayout(column)
-
         return row2
     
     def _create_btn_row(self):
@@ -286,8 +287,6 @@ class FilamentForm(QWidget):
         for widget, label_text in date_fields:
             widget.setDisplayFormat("dd-MM-yyyy")
             widget.setMinimumDate(min_date)
-            #widget.setCalendarPopup(True) # Opcional: torna o input mais amigáve
-            
             column = self._setup_layout(QVBoxLayout, spacing=4)
             column.addWidget(form_label(label_text))
             column.addWidget(widget)
@@ -309,9 +308,7 @@ class FilamentForm(QWidget):
         self.quantidade_input.setSuffix(' Bobinas')
 
     def _populate_form(self, filament):
-        if filament is None:
-            self._clear()
-        else:
+        if filament:
             self.form_title.setText("Editar filamento")
             self.tipo_combo.setCurrentText(filament.tipo)
             self.marca_combo.setCurrentText(filament.marca)
@@ -322,6 +319,9 @@ class FilamentForm(QWidget):
             self.quantidade_input.setValue(filament.quantidade)
             self.bobina_input.setText(str(int(filament.peso_bobina_g)))
             self.usado_input.setText(str(int(filament.peso_usado_g)))
+        else:
+            self._clear()
+           
 
     def load(self, filament: FilamentData | None):
         """Popula o formulário. None = novo filamento."""
@@ -345,6 +345,7 @@ class FilamentForm(QWidget):
         self.preco_input.clear()
         self.bobina_input.clear()
         self.usado_input.clear()
+        self.date_opened.clear()
 
     def _on_save(self):
         try:
@@ -352,8 +353,8 @@ class FilamentForm(QWidget):
             bobina = float(self.bobina_input.text().replace(",", "."))
             usado = float(self.usado_input.text().replace(",", "."))
         except ValueError:
-            StyledMessageBox.warning(
-                self, "Valor inválido",
+            self._show_worning(
+                "Valor inválido",
                 "Preço, peso da bobina e peso usado devem ser numéricos.")
             return
 
@@ -363,6 +364,9 @@ class FilamentForm(QWidget):
         filamento = self._set_filament_data(preco, bobina, usado)
         self._clear()
         self.saved.emit(filamento)
+    
+    def _show_worning(self, title):
+        StyledMessageBox.warning(self, title, message)
 
     def _set_filament_data(self, preco, bobina, usado):
         self._filament.tipo = self.tipo_combo.currentText()
@@ -371,6 +375,8 @@ class FilamentForm(QWidget):
         self._filament.cor = self.cor_input.text().strip() or "Sem nome"
         self._filament.cor_str = self.cor_hex_input.text().strip()
         self._filament.quantidade = self.quantidade_input.value()
+        self._filament.dat_abertura = self.date_opened.date().toString("dd/MM/yyyy")
+        self._filament.data_validade = self.valid_date.date().toString("dd/MM/yyyy")
         self._filament.preco_kg = preco
         self._filament.peso_bobina_g = bobina
         self._filament.peso_usado_g = usado
@@ -388,7 +394,6 @@ class FilamentCardRow(QWidget):
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(8)
-        # alinha todos os filhos ao centro vertical
         root.setAlignment(Qt.AlignVCenter)
 
         self.card = FilamentCard(filamento)
@@ -420,13 +425,11 @@ class FilamentCardRow(QWidget):
         self.delete_btn.clicked.connect(
             lambda: self.delete_requested.emit(self.filament)
         )
-
         btn_col = QVBoxLayout()
         btn_col.setSpacing(6)
         btn_col.setAlignment(Qt.AlignVCenter)  # centraliza no eixo vertical
         btn_col.addWidget(self.edit_btn)
         btn_col.addWidget(self.delete_btn)
-
         root.addLayout(btn_col)
 
 
@@ -437,20 +440,30 @@ class FilamentPageWidget(QWidget):
         super().__init__()
         self._filaments: list[FilamentData] = []
         self._cards: list[FilamentCard] = []
-        self.setStyleSheet(STYLE_SHEET)
+        
+        self._init_compontents()
+        self._setup_styles()
+        self._mount_layouts()
+        self._connect_signals()
+    
+    def _connect_signals(self):
+        self.form.saved.connect(self._on_form_saved)
+        self.form.cancelled.connect(self._close_form)
+        self.add_btn.clicked.connect(self._on_new)
+
+    def _init_compontents(self):
         self.add_btn = QPushButton("+ Novo filamento")
         self.edit_btn = QPushButton("Editar")
         self.delete_btn = QPushButton("Deletar")
         self.list_container = QWidget()
-        self.list_container.setStyleSheet("background: #F5F4F0;")
+        
         self.empty_lbl = QLabel(
             "Nenhum filamento cadastrado.\nClique em \"+ Novo filamento\""
         )
         self.form = FilamentForm()
         self.form.hide()
-        self.form.saved.connect(self._on_form_saved)
-        self.form.cancelled.connect(self._close_form)
-
+    
+    def _mount_layouts(self):
         root_layout = self._setup_layout(QHBoxLayout)
         self.setLayout(root_layout)
         left = self._setup_layout(QVBoxLayout)
@@ -463,25 +476,16 @@ class FilamentPageWidget(QWidget):
         topbar_layout.addStretch()
         topbar_layout.addWidget(self.add_btn)
         left.addWidget(topbar)
-       
-        self._setup_buttons(self.add_btn, "FilamentNew", 32)
-        self._setup_buttons(self.edit_btn, None, 32)
-
-        self.add_btn.clicked.connect(self._on_new)
-
         scroll = self._setup_scrollarea()
         scroll.setWidget(self.list_container)
         left.addWidget(scroll)
-        
         self.list_layout = self._setup_layout(
             QVBoxLayout, margins=(16, 8, 16, 8), spacing=8)
         self.list_container.setLayout(self.list_layout)
-
         self.empty_lbl.setAlignment(Qt.AlignCenter)
         self.empty_lbl.setObjectName("MenuSubtitle")
         self.list_layout.insertWidget(0, self.empty_lbl)
         self.list_layout.addStretch()
-
         left_widget = QWidget()
         left_widget.setLayout(left)
         root_layout.addWidget(left_widget, stretch=1)
@@ -508,6 +512,12 @@ class FilamentPageWidget(QWidget):
         scroll.setStyleSheet("background: #F5F4F0;")
         return scroll
 
+    def _setup_styles(self):
+        self.setStyleSheet(STYLE_SHEET)
+        self.list_container.setStyleSheet("background: #F5F4F0;")
+        self._setup_buttons(self.add_btn, "FilamentNew", 32)
+        self._setup_buttons(self.edit_btn, None, 32)
+
     def _set_topbar(self, objectname, height):
         topbar = QWidget()
         topbar.setObjectName(objectname)
@@ -520,7 +530,6 @@ class FilamentPageWidget(QWidget):
             self.list_layout.removeWidget(card)
             card.deleteLater()
         self._cards.clear()
-
         self.empty_lbl.setVisible(len(self._filaments) == 0)
 
         for f in self._filaments:
