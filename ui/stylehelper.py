@@ -2,9 +2,51 @@ from PySide6.QtWidgets import QComboBox, QFrame, QLabel, QLineEdit
 
 
 # Estilização Global (QSS)
-STYLE_SHEET = """
+STYLE_SHEET ="""
+/* ============================================================================
+   1. ESTILOS GERAIS (Widgets Base)
+============================================================================ */
 QMainWindow {
     background-color: #F8F9FA;
+}
+
+QLabel {
+    font-size: 11px; 
+    color: #5F5E5A;
+}
+
+QLineEdit, QTextEdit {
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    padding: 8px;
+    background-color: white;
+    color: #2C2C2A;
+}
+
+QSpinBox {
+    border: 1px solid #B4B2A9;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 12px;
+    background: white;
+    color: #2C2C2A;
+}
+QSpinBox:focus { border-color: #185FA5; }
+QSpinBox:up-button, QSpinBox:down-button { subcontrol-origin: border; width: 18px; }
+
+QDateEdit {
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    padding: 4px;
+    background-color: white;
+}
+QDateEdit::drop-down { border: none; }
+
+/*============================================================================
+   2. CONTAINERS E ESTRUTURA (IDs e Classes)
+============================================================================ */
+#ContentArea {
+    background-color: #FFFFFF;
 }
 
 #Sidebar {
@@ -13,16 +55,13 @@ QMainWindow {
     min-width: 200px;
 }
 
-#FilamentTopBar{
-}
-
 #FilamentForm {
     background: white;
     border-left: 1px solid #D3D1C7;
 }
 
-#ContentArea {
-    background-color: #FFFFFF;
+#FilamentTopBar { 
+    /* Reservado */ 
 }
 
 .Card {
@@ -37,31 +76,37 @@ QMainWindow {
     border-radius: 10px;
     padding: 10px;
 }
-QDateEdit {
-    border: 1px solid #cccccc;
-    border-radius: 8px;
-    padding: 4px;
-    background-color: white;
+
+/* ============================================================================
+   3. NAVEGAÇÃO E TABS
+============================================================================ */
+QTabWidget::pane { border: none; top: -1px; }
+
+QTabBar::tab {
+    background: transparent;
+    padding: 10px 20px;
+    margin-right: 10px;
+    color: #666;
+    border-bottom: 2px solid transparent;
 }
-QDateEdit::drop-down {
-    border: none;
-}
-QLabel{
-    font-size: 11px; color: #5F5E5A;
-    }
-QLabel#MenuTitle {
-    font-size: 18px;
+QTabBar::tab:selected {
+    color: #0052CC;
+    border-bottom: 2px solid #0052CC;
     font-weight: bold;
-    color: #333;
-    margin-bottom: 5px;
 }
 
-QLabel#MenuSubtitle {
-    font-size: 12px;
-    color: #777;
-    margin-bottom: 20px;
+QTableWidget { 
+    background-color: white; 
+    border: 1px solid #E0DED7; 
+    border-radius: 12px; 
+    gridline-color: #F2F0E9;
 }
 
+/* ============================================================================
+   4. BOTÕES (QPushButton)
+============================================================================ */
+
+/* Botões de Menu (Sidebar) */
 QPushButton#MenuButton {
     text-align: left;
     padding: 10px;
@@ -70,32 +115,10 @@ QPushButton#MenuButton {
     color: #555;
     font-weight: 500;
 }
+QPushButton#MenuButton:hover { background-color: #E8EBF0; }
+QPushButton#MenuButton[active="true"] { background-color: #DBEAFE; color: #2563EB; }
 
-QPushButton#MenuButton:hover {
-    background-color: #E8EBF0;
-}
-
-QPushButton#MenuButton[active="true"] {
-    background-color: #DBEAFE;
-    color: #2563EB;
-}
-
-QPushButton#FilamentCancelButton {
-    border: 1px solid #B4B2A9; border-radius: 6px;
-    padding: 0 14px; font-size: 12px;
-    background: transparent; color: #2C2C2A;
-}
-
-QPushButton#FilamentCancelButton:hover { background: #F12F28; color: white }
-
-QPushButton#FilamentSaveButton {
-    border: none; border-radius: 6px;
-    padding: 0 14px; font-size: 12px;
-    background: #185FA5; color: white;
-}
-
-QPushButton#FilamentSaveButton:hover { background: #0C447C; }
-
+/* Botões de Ação (Filamentos) */
 QPushButton#FilamentNew {
     background: #185FA5;
     color: white;
@@ -106,33 +129,22 @@ QPushButton#FilamentNew {
 }
 QPushButton#FilamentNew:hover { background: #0C447C; }
 
-QLabel#CardTitle {
-    font-weight: bold;
-    font-size: 14px;
-    color: #333;
+QPushButton#FilamentSaveButton {
+    border: none; border-radius: 6px;
+    padding: 0 14px; font-size: 12px;
+    background: #185FA5; color: white;
 }
+QPushButton#FilamentSaveButton:hover { background: #0C447C; }
 
-QLineEdit, QTextEdit {
-    border: 1px solid #D1D5DB;
-    border-radius: 6px;
-    padding: 8px;
-    background-color: white;
-    background: white;
-    color: #2C2C2A;
+QPushButton#FilamentCancelButton {
+    border: 1px solid #B4B2A9; border-radius: 6px;
+    padding: 0 14px; font-size: 12px;
+    background: transparent; color: #2C2C2A;
 }
+QPushButton#FilamentCancelButton:hover { background: #F12F28; color: white; }
 
-QProgressBar {
-    border-radius: 4px;
-    background: #E5E5E3;
-    text-align: center;
-    font-size: 10px;
-}
-QProgressBar::chunk {
-    border-radius: 4px;
-}
-
+/* Botões Gerais */
 QPushButton#PrimaryButton {
-    background-color: #FFFFFF;
     border: 1px solid #B4B2A9;
     border-radius: 6px;
     padding: 0px 14px;
@@ -141,23 +153,27 @@ QPushButton#PrimaryButton {
     background: transparent;
     color: #2C2C2A;
 }
+QPushButton#PrimaryButton:hover { background-color: #F3F4F6; color: #FCFCFA; }
 
-QPushButton#PrimaryButton:hover {
-    background-color: #F3F4F6;
-    color: #FCFCFA;
-}
+QPushButton#AddBtn {
+    background: #F8F7F2; border: 1px solid #D1CDC4; padding: 0px 14px;
+    font-size: 14px;
+    font-weight: bold; }
 
-QSpinBox {
-    border: 1px solid #B4B2A9;
-    border-radius: 6px;
-    padding: 0 8px;
-    font-size: 12px;
-    background: white;
-    color: #2C2C2A;
+/* ============================================================================
+   5. COMPONENTES DE STATUS E TEXTO ESPECÍFICO
+============================================================================ */
+QLabel#MenuTitle { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 5px; }
+QLabel#MenuSubtitle { font-size: 12px; color: #777; margin-bottom: 20px; }
+QLabel#CardTitle { font-weight: bold; font-size: 14px; color: #333; }
+
+QProgressBar {
+    border-radius: 4px;
+    background: #E5E5E3;
+    text-align: center;
+    font-size: 10px;
 }
-QSpinBox:focus { border-color: #185FA5; }
-QSpinBox:up-button { subcontrol-origin: border; width: 18px; }
-QSpinBox:down-button { subcontrol-origin: border; width: 18px; }
+QProgressBar::chunk { border-radius: 4px; }
 """
 
 def make_divider():
