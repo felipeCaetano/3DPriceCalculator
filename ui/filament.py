@@ -40,7 +40,7 @@ class FilamentCard(QFrame):
         self.filament = filamento
         self.setProperty("class", "Card")
         self.setFixedHeight(128)
-        self.name_lbl = QLabel("Filamento", objectName="CardTitle")
+        self.name_lbl = QLabel("Filamento", objectName="PanelTitle")
         self.filament_type = QLabel("PLA")
         self.filament_acabamento = QLabel("Hyper Speed")
         self.filament_brand = QLabel("Anycubic")

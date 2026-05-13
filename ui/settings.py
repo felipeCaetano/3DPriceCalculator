@@ -1,274 +1,546 @@
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QHeaderView, QLabel, QPushButton, \
- QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
-from PySide6.QtGui import QIcon, QFont
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtWidgets import (
+    QGridLayout, QHBoxLayout, QHeaderView, QLabel, QPushButton,
+    QSizePolicy, QTabWidget, QTableWidget, QTableWidgetItem,
+    QVBoxLayout, QWidget,
+)
+from PySide6.QtGui import QColor, QFont
+from PySide6.QtCore import Qt
 
-from ui.stylehelper import form_label, make_divider, make_section_label, panel_title, styled_combo, \
-    styled_input, STYLE_SHEET
+from ui.stylehelper import (
+    badge_color, form_label, make_divider, make_section_label, make_success_banner,
+    panel_title, styled_combo, styled_input, STYLE_SHEET,
+    C_GREEN, C_TEXT3, C_TEXT4,
+)
 
 
 class SettingsWidget(QWidget):
-    """Página que mostra todas as configurações disponíveis
-    como impressora e energia elétrica"""
+    """Página de configurações do sistema de precificação 3D."""
 
     def __init__(self):
         super().__init__()
         self.setStyleSheet(STYLE_SHEET)
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        self.save_btn = QPushButton("Salvar")
-        self.save_btn.setObjectName("PrimaryButton")
-        self.reset_btn = QPushButton("Restaurar Padrões")
-        self.reset_btn.setObjectName("PrimaryButton")
-        top_layout = self._create_header()
-        layout.addLayout(top_layout)
-        layout.addWidget(make_divider())
-        tabs = QTabWidget()
-        machines_tab = QWidget()
-        energy_tab = QWidget()
-        work_tab = QWidget()
-        self.setup_machines_tab(machines_tab)
-        self.setup_energy_tab(energy_tab)
-        self.setup_work_tab(work_tab)
-        
-        tabs.addTab(machines_tab, "Máquinas")
-        tabs.addTab(energy_tab, "Energia")
-        tabs.addTab(work_tab, "Mão de obra")
-        tabs.addTab(QWidget(), "Insumos")
-        tabs.addTab(QWidget(), "Parâmetros")
 
-        layout.addWidget(tabs)
-        layout.addStretch()
+        root = QVBoxLayout(self)
+        root.setContentsMargins(20, 16, 20, 16)
+        root.setSpacing(0)
+
+        # ── Cabeçalho ──────────────────────────────────────────────────
+        self.save_btn  = QPushButton("Salvar")
+        self.save_btn.setObjectName("PrimaryButton")
+        self.reset_btn = QPushButton("Restaurar padrões")
+        self.reset_btn.setObjectName("GhostButton")
+
+        root.addLayout(self._build_header())
+        root.addSpacing(4)
+        root.addWidget(make_divider())
+        root.addSpacing(0)
+
+        # ── Abas ───────────────────────────────────────────────────────
+        tabs = QTabWidget()
+        tabs.setDocumentMode(True)          # sem bordas extras ao redor
+
+        mach_tab   = QWidget(); mach_tab.setStyleSheet("background:transparent;")
+        energy_tab = QWidget(); energy_tab.setStyleSheet("background:transparent;")
+        work_tab   = QWidget(); work_tab.setStyleSheet("background:transparent;")
+        ins_tab    = QWidget(); ins_tab.setStyleSheet("background:transparent;")
+        params_tab = QWidget(); params_tab.setStyleSheet("background:transparent;")
+
+        self._build_machines_tab(mach_tab)
+        self._build_energy_tab(energy_tab)
+        self._build_work_tab(work_tab)
+        self._build_inputs_tab(ins_tab)
+        self._build_params_tab(params_tab)
+
+        tabs.addTab(mach_tab,   "  Máquinas  ")
+        tabs.addTab(energy_tab, "  Energia  ")
+        tabs.addTab(work_tab,   "  Mão de obra  ")
+        tabs.addTab(ins_tab,    "  Insumos  ")
+        tabs.addTab(params_tab, "  Parâmetros  ")
+
+        root.addWidget(tabs)
+        root.addStretch()
+
         self._connect_signals()
-    
-    def _create_header(self):
-        layout_H = QHBoxLayout()
-        layout_V = QVBoxLayout()
+
+    # ──────────────────────────────────────────────────────────────────
+    # Cabeçalho
+    # ──────────────────────────────────────────────────────────────────
+
+    def _build_header(self) -> QHBoxLayout:
+        h = QHBoxLayout()
+        h.setContentsMargins(0, 0, 0, 12)
+
+        vbox = QVBoxLayout()
+        vbox.setSpacing(2)
         title = QLabel("Configurações")
         title.setObjectName("MenuTitle")
-        subtitle = QLabel("Parâmetros do sistema de precificação")
-        subtitle.setObjectName("MenuSubtitle")
-        layout_V.addWidget(title)
-        layout_V.addWidget(subtitle)
-        btn_layout = QHBoxLayout()
-        btn_layout.addWidget(self.reset_btn)
-        btn_layout.addWidget(self.save_btn)
-        layout_H.addLayout(layout_V)
-        layout_H.addStretch()
-        layout_H.addLayout(btn_layout)
-        return layout_H
-    
+        sub = QLabel("Parâmetros do sistema de precificação")
+        sub.setObjectName("MenuSubtitle")
+        vbox.addWidget(title)
+        vbox.addWidget(sub)
+
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(8)
+        btn_row.addWidget(self.reset_btn)
+        btn_row.addWidget(self.save_btn)
+
+        h.addLayout(vbox)
+        h.addStretch()
+        h.addLayout(btn_row)
+        return h
+
+    # ──────────────────────────────────────────────────────────────────
+    # Signals
+    # ──────────────────────────────────────────────────────────────────
+
     def _connect_signals(self):
         self.reset_btn.clicked.connect(self.clear)
         self.save_btn.clicked.connect(self.save)
-        self.add_btn.clicked.connect(self.add_machine)
+        self.mach_add_btn.clicked.connect(self.add_machine)
+        self.work_add_btn.clicked.connect(self.add_work_type)
 
-    def add_machine(self):
-        print("add machine")
-    
-    def clear(self):
-        print("clear forms")
+    def add_machine(self):   print("add machine")
+    def add_work_type(self): print("add work type")
+    def clear(self):         print("clear forms")
+    def save(self):          print("salvando configurações")
 
-    def save(self):
-        print("salvando as tabelas")
-    
+    # ──────────────────────────────────────────────────────────────────
+    # Helpers comuns
+    # ──────────────────────────────────────────────────────────────────
 
-    def setup_machines_tab(self, tab):
+    @staticmethod
+    def _make_table(rows: int, cols: int, headers: list[str]) -> QTableWidget:
+        tbl = QTableWidget(rows, cols)
+        tbl.setHorizontalHeaderLabels(headers)
+        tbl.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        tbl.verticalHeader().setVisible(False)
+        tbl.setSelectionBehavior(QTableWidget.SelectRows)
+        tbl.setAlternatingRowColors(True)
+        tbl.setShowGrid(False)
+        tbl.setEditTriggers(QTableWidget.NoEditTriggers)
+        tbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        return tbl
+
+    @staticmethod
+    def _set_item(
+        table: QTableWidget,
+        row: int, col: int,
+        text: str,
+        align: Qt.AlignmentFlag = Qt.AlignCenter,
+        bold: bool = False,
+        fg: QColor | None = None,
+        bg: QColor | None = None,
+    ):
+        item = QTableWidgetItem(text)
+        item.setTextAlignment(align)
+        if bold:
+            f = QFont(); f.setBold(True); item.setFont(f)
+        if fg:
+            item.setForeground(fg)
+        if bg:
+            item.setBackground(bg)
+        table.setItem(row, col, item)
+
+    @staticmethod
+    def _tab_bar_row() -> QHBoxLayout:
+        """Barra de descrição + botão add no topo de cada aba."""
+        h = QHBoxLayout()
+        h.setContentsMargins(0, 8, 0, 8)
+        return h
+
+    # ──────────────────────────────────────────────────────────────────
+    # Aba: MÁQUINAS
+    # ──────────────────────────────────────────────────────────────────
+
+    def _build_machines_tab(self, tab: QWidget):
         layout = QVBoxLayout(tab)
-        top_bar = QHBoxLayout()
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(8)
+
+        # Barra superior
+        top = QHBoxLayout()
         desc = QLabel("Impressoras disponíveis, custos e amortização")
-        desc.setStyleSheet("color: #666;")
-        self.add_btn = QPushButton("+ Adicionar máquina")
-        self.add_btn.setObjectName("AddBtn")
-        top_bar.addWidget(desc)
-        top_bar.addStretch()
-        top_bar.addWidget(self.add_btn)
-        layout.addLayout(top_bar)
-        table = QTableWidget(3, 7)
-        table.setHorizontalHeaderLabels(
-            [
-                "Modelo",
-                "Marca",
-                "Custo",
-                "Potência",
-                "Amortiz.",
-                "R$/hora",
-                "Status"
-            ]
-        )
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.verticalHeader().setVisible(False)
-        table.setSelectionBehavior(QTableWidget.SelectRows)
-        
+        desc.setObjectName("MenuSubtitle")
+        self.mach_add_btn = QPushButton("+ Adicionar máquina")
+        self.mach_add_btn.setObjectName("AddBtn")
+        top.addWidget(desc)
+        top.addStretch()
+        top.addWidget(self.mach_add_btn)
+        layout.addLayout(top)
+
+        # Tabela
+        headers = ["Modelo", "Marca", "Custo", "Potência", "Amortiz.", "R$/hora", "Status"]
+        table = self._make_table(3, 7, headers)
+
         data = [
-            ["Ender-3 V3 SE", "Creality", "R$ 899,00", "270 W", "24 meses",
-             "R$ 1,25", "Ativa"],
-            ["P1S", "Bambu Lab", "R$ 7.490,00", "350 W", "36 meses",
-            "R$ 6,92", "Ativa"],
-            ["Saturn 4 Ultra", "Elegoo", "R$ 3.200,00", "50 W", "30 meses",
-            "R$ 3,56", "Inativa"],
+            ("Ender-3 V3 SE", "Creality",  "R$ 899,00",   "270 W", "24 meses", "R$ 1,25", "Ativa"),
+            ("P1S",           "Bambu Lab", "R$ 7.490,00", "350 W", "36 meses", "R$ 6,92", "Ativa"),
+            ("Saturn 4 Ultra","Elegoo",    "R$ 3.200,00", "50 W",  "30 meses", "R$ 3,56", "Inativa"),
         ]
 
         for row, row_data in enumerate(data):
             for col, value in enumerate(row_data):
-                item = QTableWidgetItem(value)
-                item.setTextAlignment(Qt.AlignCenter)
-                if col == 5: # R$/hora
-                    item.setForeground(Qt.darkGreen)
-                    font = QFont()
-                    font.setBold(True)
-                    item.setFont(font)
-                table.setItem(row, col, item)
+                if col == 0:   # Modelo — alinhado à esquerda, bold
+                    self._set_item(table, row, col, value, Qt.AlignVCenter | Qt.AlignLeft, bold=True)
+                elif col == 5:  # R$/hora — verde + bold
+                    self._set_item(table, row, col, value, Qt.AlignCenter, bold=True, fg=QColor(C_GREEN))
+                elif col == 6:  # Status — badge colorido
+                    bg, fg = badge_color(value)
+                    self._set_item(table, row, col, value, Qt.AlignCenter, bold=False, fg=fg, bg=bg)
+                else:
+                    self._set_item(table, row, col, value, Qt.AlignCenter, fg=QColor(C_TEXT3))
 
+        table.setRowHeight(0, 40)
+        table.setRowHeight(1, 40)
+        table.setRowHeight(2, 40)
         layout.addWidget(table)
-        
+
+        # Rodapé
         footer = QLabel("3 máquinas · 2 ativas")
         footer.setAlignment(Qt.AlignRight)
-        footer.setStyleSheet("color: #888; font-size: 12px;")
+        footer.setObjectName("FooterLabel")
         layout.addWidget(footer)
 
-    def setup_energy_tab(self, tab):
-        layout = QHBoxLayout(tab)
-        content = QWidget()
-        content_layout = QVBoxLayout()
-        content.setProperty("class", "Card")
-        content_title = QLabel("Componentes da Tarifa")
-        content_title.setObjectName("MenuSubtitle")
-        content_layout.addWidget(content_title)
-        row1 = QHBoxLayout()
-        row1.addWidget(form_label("TE — Tarifa de Energia\n(R$/kWh)"))
-        te_input = styled_input("0,4521")
-        row1.addWidget(te_input)
-        content_layout.addLayout(row1)
-        row2 = QHBoxLayout()
-        row2.addWidget(form_label("TUSD — Uso do sistema\n(R$/kWh)"))
-        tusd_input = styled_input("0,3814")
-        row2.addWidget(tusd_input)
-        content_layout.addLayout(row2)
-        content_layout.addWidget(make_divider())
-        content_tax = QLabel("Impostos sobre energia")
-        content_tax.setObjectName("MenuSubtitle")
-        content_layout.addWidget(content_tax)
-        row3 = QHBoxLayout()
-        row3.addWidget(form_label("ICMS (%)"))
-        icms_input = styled_input("27,5")
-        row3.addWidget(icms_input)
-        content_layout.addLayout(row3)
-        row4 = QHBoxLayout()
-        row4.addWidget(form_label("PIS (%)"))
-        pis_input = styled_input("0,65")
-        row4.addWidget(pis_input)
-        content_layout.addLayout(row4)
-        row5 = QHBoxLayout()
-        row5.addWidget(form_label("COFINS (%)"))
-        cofins_input = styled_input("3")
-        row5.addWidget(cofins_input)
-        content_layout.addLayout(row5)
-        content.setLayout(content_layout)
-        layout.addWidget(content)
+    # ──────────────────────────────────────────────────────────────────
+    # Aba: ENERGIA
+    # ──────────────────────────────────────────────────────────────────
 
-        flag = QWidget()
-        flag.setProperty("class", "Card")
-        flag_layout = QVBoxLayout()
-        flag_title = QLabel("Bandeira Tarifária:")
-        flag_title.setObjectName("MenuSubtitle")
-        flag_layout.addWidget(flag_title)
-        flag.setLayout(flag_layout)
-        flag_input = styled_combo(
-            ["Verde", "Amarela", "Vermelha pt. 1", "Vermelha pt. 2"]
+    def _build_energy_tab(self, tab: QWidget):
+        outer = QHBoxLayout(tab)
+        outer.setContentsMargins(0, 8, 0, 8)
+        outer.setSpacing(12)
+
+        # ── Card esquerdo: componentes ──────────────────────────────
+        left_card = QWidget()
+        left_card.setProperty("class", "Card")
+        left_layout = QVBoxLayout(left_card)
+        left_layout.setSpacing(6)
+
+        left_layout.addWidget(panel_title("Componentes da tarifa"))
+        left_layout.addSpacing(4)
+
+        for label_text, default in [
+            ("TE — Tarifa de Energia (R$/kWh)", "0,4521"),
+            ("TUSD — Uso do sistema (R$/kWh)",  "0,3814"),
+        ]:
+            row = QHBoxLayout()
+            lbl = form_label(label_text)
+            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            inp = styled_input(value=default)
+            inp.setFixedWidth(90)
+            inp.setAlignment(Qt.AlignRight)
+            row.addWidget(lbl)
+            row.addWidget(inp)
+            left_layout.addLayout(row)
+
+        left_layout.addWidget(make_divider())
+
+        tax_title = form_label("Impostos sobre energia:")
+        left_layout.addWidget(tax_title)
+
+        for label_text, default in [
+            ("ICMS (%)",   "27,5"),
+            ("PIS (%)",    "0,65"),
+            ("COFINS (%)", "3,00"),
+        ]:
+            row = QHBoxLayout()
+            lbl = form_label(label_text)
+            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            inp = styled_input(value=default)
+            inp.setFixedWidth(90)
+            inp.setAlignment(Qt.AlignRight)
+            row.addWidget(lbl)
+            row.addWidget(inp)
+            left_layout.addLayout(row)
+
+        left_layout.addStretch()
+        outer.addWidget(left_card, stretch=2)
+
+        # ── Coluna direita ──────────────────────────────────────────
+        right = QVBoxLayout()
+        right.setSpacing(12)
+
+        # Card bandeira
+        flag_card = QWidget()
+        flag_card.setProperty("class", "Card")
+        flag_layout = QVBoxLayout(flag_card)
+        flag_layout.setSpacing(6)
+        flag_layout.addWidget(panel_title("Bandeira tarifária"))
+        flag_combo = styled_combo([
+            "Verde — R$ 0,000 / kWh",
+            "Amarela — R$ 0,01874 / kWh",
+            "Vermelha Pt. 1 — R$ 0,03971 / kWh",
+            "Vermelha Pt. 2 — R$ 0,09492 / kWh",
+        ], current=2)
+        flag_layout.addWidget(flag_combo)
+        disclaimer = QLabel("Atualizada mensalmente pela ANEEL.")
+        disclaimer.setObjectName("MenuSubtitle")
+        flag_layout.addWidget(disclaimer)
+
+        # Card custo calculado
+        calc_card = QWidget()
+        calc_card.setProperty("class", "Card")
+        calc_card.setStyleSheet(
+            "QWidget[class='Card'] { background-color: #f0fdf4; border: 1px solid #bbf7d0; }"
         )
-        flag_layout.addWidget(flag_input)
-        flag_disclaimer = QLabel("Atualizada mensalmente pela ANEEL.")
-        flag_disclaimer.setObjectName("MenuSubtitle")
+        calc_layout = QVBoxLayout(calc_card)
+        calc_layout.setSpacing(4)
 
-        energy_cost = QWidget()
-        energy_cost.setProperty("class", "Card")
-        energy_cost_layout = QVBoxLayout()
-        energy_cost_title = QLabel("Custo efetivo calculado")
-        energy_cost_value = QLabel(f"R$ {self._calculate_value()}/kWh")
-        energy_cost_layout.addWidget(energy_cost_title)
-        energy_cost_layout.addWidget(energy_cost_value)
-        energy_cost_te = QLabel("TE + Bandeira: ")
-        energy_cost_te.setObjectName("MenuSubtitle")
-        energy_cost_layout.addWidget(energy_cost_te)
-        energy_cost.setLayout(energy_cost_layout)
+        calc_title = QLabel("Custo efetivo calculado")
+        calc_title.setObjectName("SectionLabel")
+        calc_title.setStyleSheet("color: #15803d; background: transparent;")
 
-        right_layout = QVBoxLayout()
-        layout.addLayout(right_layout)
-        right_layout.addWidget(flag)
-        right_layout.addWidget(energy_cost)
+        calc_value = QLabel(f"R$ {self._calculate_energy_cost()} / kWh")
+        calc_value.setObjectName("HighlightValue")
 
-        layout.addStretch()
+        calc_detail = QLabel(
+            "TE + Bandeira:  R$ 0,4918\n"
+            "TUSD:            R$ 0,3814\n"
+            "Impostos:        R$ 0,1994"
+        )
+        calc_detail.setObjectName("MenuSubtitle")
 
-    def _calculate_value(self):
-        return "1,07"
-    
-    def setup_work_tab(self, tab):
+        calc_layout.addWidget(calc_title)
+        calc_layout.addWidget(calc_value)
+        calc_layout.addSpacing(4)
+        calc_layout.addWidget(calc_detail)
+
+        right.addWidget(flag_card)
+        right.addWidget(calc_card)
+        right.addStretch()
+
+        outer.addLayout(right, stretch=1)
+
+    def _calculate_energy_cost(self) -> str:
+        return "1,0726"
+
+    # ──────────────────────────────────────────────────────────────────
+    # Aba: MÃO DE OBRA
+    # ──────────────────────────────────────────────────────────────────
+
+    def _build_work_tab(self, tab: QWidget):
         layout = QVBoxLayout(tab)
-        top_bar = QHBoxLayout()
-        desc = QLabel("Tipos de Mão de Obra")
-        desc.setStyleSheet("color: #666;")
-        self.add_btn = QPushButton("+ Adiciona")
-        self.add_btn.setObjectName("AddBtn")
-        top_bar.addWidget(desc)
-        top_bar.addStretch()
-        top_bar.addWidget(self.add_btn)
-        layout.addLayout(top_bar)
-        table = QTableWidget(3, 4)
-        table.setHorizontalHeaderLabels(
-            [
-                "Função",
-                "R$/h",
-                "Encargos",
-                "Custo total/h",
-            ]
-        )
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.verticalHeader().setVisible(False)
-        table.setSelectionBehavior(QTableWidget.SelectRows)
-        
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(8)
+
+        # Barra superior
+        top = QHBoxLayout()
+        desc = QLabel("Tipos de mão de obra e encargos trabalhistas")
+        desc.setObjectName("MenuSubtitle")
+        self.work_add_btn = QPushButton("+ Adicionar")
+        self.work_add_btn.setObjectName("AddBtn")
+        top.addWidget(desc)
+        top.addStretch()
+        top.addWidget(self.work_add_btn)
+        layout.addLayout(top)
+
+        # Tabela
+        headers = ["Função", "R$/hora", "Encargos", "Custo total/h"]
+        table = self._make_table(3, 4, headers)
+
         data = [
-            ["Operador / Monitoramento", "R$ 18,00", "67,8%", "R$ 30,20"],
-            ["Pós-Processamento", "R$ 22,00", "67,8%", "R$ 36,91"],
-            ["Design / Modelagem 3D", "R$ 60,00", "—", "R$ 60,0"],
+            ("Operador / Monitoramento", "R$ 18,00", "67,8%", "R$ 30,20"),
+            ("Pós-Processamento",        "R$ 22,00", "67,8%", "R$ 36,91"),
+            ("Design / Modelagem 3D",    "R$ 60,00", "—",     "R$ 60,00"),
         ]
 
         for row, row_data in enumerate(data):
             for col, value in enumerate(row_data):
-                item = QTableWidgetItem(value)
-                item.setTextAlignment(Qt.AlignCenter)
-                if col == 3: # R$/hora
-                    item.setForeground(Qt.darkGreen)
-                    font = QFont()
-                    font.setBold(True)
-                    item.setFont(font)
-                table.setItem(row, col, item)
+                if col == 0:
+                    self._set_item(table, row, col, value, Qt.AlignVCenter | Qt.AlignLeft)
+                elif col == 3:
+                    self._set_item(table, row, col, value, Qt.AlignCenter, bold=True, fg=QColor(C_GREEN))
+                else:
+                    self._set_item(table, row, col, value, Qt.AlignCenter, fg=QColor(C_TEXT3))
+
+        table.setRowHeight(0, 40)
+        table.setRowHeight(1, 40)
+        table.setRowHeight(2, 40)
+        layout.addWidget(table)
+
+        # Card encargos
+        enc_card = QWidget()
+        enc_card.setProperty("class", "Card")
+        enc_layout = QVBoxLayout(enc_card)
+        enc_layout.setSpacing(8)
+
+        enc_layout.addWidget(panel_title("Encargos trabalhistas aplicados"))
+
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(16)
+        grid.setVerticalSpacing(4)
+
+        charges = [
+            ("INSS patronal (%)", "20,00"),
+            ("FGTS (%)",          "8,00"),
+            ("13º + Férias (%)",  "26,70"),
+            ("Outros (%)",        "13,10"),
+        ]
+        for col, (lbl_text, default) in enumerate(charges):
+            grid.addWidget(form_label(lbl_text), 0, col)
+            inp = styled_input(value=default)
+            inp.setAlignment(Qt.AlignRight)
+            grid.addWidget(inp, 1, col)
+
+        enc_layout.addLayout(grid)
+        enc_layout.addWidget(
+            make_section_label(f"Total encargos: {self._calculate_work()}% sobre o salário-hora")
+        )
+        layout.addWidget(enc_card)
+
+    def _calculate_work(self) -> str:
+        return "67,8"
+
+    # ──────────────────────────────────────────────────────────────────
+    # Aba: INSUMOS
+    # ──────────────────────────────────────────────────────────────────
+
+    def _build_inputs_tab(self, tab: QWidget):
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(8)
+
+        top = QHBoxLayout()
+        desc = QLabel("Filamentos, resinas e consumíveis com preço, densidade e perda")
+        desc.setObjectName("MenuSubtitle")
+        add_btn = QPushButton("+ Adicionar material")
+        add_btn.setObjectName("AddBtn")
+        top.addWidget(desc)
+        top.addStretch()
+        top.addWidget(add_btn)
+        layout.addLayout(top)
+
+        headers = ["Material", "Marca", "R$/kg", "g/cm³", "R$/cm³", "Perda %", "Temp.", "Tipo"]
+        table = self._make_table(5, 8, headers)
+
+        data = [
+            ("PLA+",    "Polymaker", "R$ 89,90",  "1,24", "R$ 0,111", "5%",  "215 °C", "FDM"),
+            ("PETG",    "eSUN",      "R$ 94,00",  "1,27", "R$ 0,119", "6%",  "235 °C", "FDM"),
+            ("ABS",     "Bambu Lab", "R$ 120,00", "1,04", "R$ 0,125", "8%",  "245 °C", "FDM"),
+            ("TPU 95A", "Polymaker", "R$ 189,00", "1,21", "R$ 0,229", "4%",  "230 °C", "FDM"),
+            ("ABS-Like","Elegoo",    "R$ 189,00", "1,11", "R$ 0,210", "4%",  "—",      "Resina"),
+        ]
+
+        for row, row_data in enumerate(data):
+            for col, value in enumerate(row_data):
+                if col == 0:
+                    self._set_item(table, row, col, value, Qt.AlignVCenter | Qt.AlignLeft, bold=True)
+                elif col == 4:   # R$/cm³ — verde
+                    self._set_item(table, row, col, value, Qt.AlignCenter, fg=QColor(C_GREEN))
+                elif col == 5:   # Perda % — laranja
+                    self._set_item(table, row, col, value, Qt.AlignCenter, fg=QColor("#d97706"))
+                else:
+                    self._set_item(table, row, col, value, Qt.AlignCenter, fg=QColor(C_TEXT3))
+
+        for r in range(5):
+            table.setRowHeight(r, 38)
 
         layout.addWidget(table)
-        
-        footer = QWidget()
-        footer.setProperty("class", "Card")
-        footer_layout = QVBoxLayout()
-        footer.setLayout(footer_layout)
-        footer_layout.setAlignment(Qt.AlignCenter)
-        footer.setStyleSheet("color: #888; font-size: 14px;")
-        footer_title = panel_title("Encargos Trabalhistas Aplicados:")
-        footer_layout.addWidget(footer_title)
-        footer_grid_layout = QGridLayout()
-        footer_grid_layout.setHorizontalSpacing(16)
-        footer_grid_layout.setVerticalSpacing(2)
-        footer_grid_layout.addWidget(form_label("INSS Patronal (%)"), 0, 0)
-        footer_grid_layout.addWidget(styled_input("20.00"), 1, 0)
-        footer_grid_layout.addWidget(form_label("FGTS (%)"), 0, 1)
-        footer_grid_layout.addWidget(styled_input("8.00"), 1, 1)
-        footer_grid_layout.addWidget(form_label("13º + Férias (%)"), 0, 2)
-        footer_grid_layout.addWidget(styled_input("26.70"), 1, 2)
-        footer_grid_layout.addWidget(form_label("Outros (%)"), 0, 3)
-        footer_grid_layout.addWidget(styled_input("13.00"), 1, 3)
-        footer_layout.addLayout(footer_grid_layout)
-        footer_footer = make_section_label(f"Total encargos: {self._calculate_work()}% sobre o salário-hora")
-        footer_layout.addWidget(footer_footer)
-        layout.addWidget(footer)
 
-    def _calculate_work(self):
-        return "67,8"
+    # ──────────────────────────────────────────────────────────────────
+    # Aba: PARÂMETROS GERAIS
+    # ──────────────────────────────────────────────────────────────────
+
+    def _build_params_tab(self, tab: QWidget):
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(10)
+
+        # Linha 1
+        row1 = QHBoxLayout()
+        row1.setSpacing(12)
+        row1.addWidget(self._build_overhead_card(), stretch=1)
+        row1.addWidget(self._build_markup_card(), stretch=1)
+        layout.addLayout(row1)
+
+        # Linha 2
+        row2 = QHBoxLayout()
+        row2.setSpacing(12)
+        row2.addWidget(self._build_print_params_card(), stretch=1)
+        row2.addWidget(self._build_maintenance_card(), stretch=1)
+        layout.addLayout(row2)
+
+    def _build_overhead_card(self) -> QWidget:
+        card = QWidget(); card.setProperty("class", "Card")
+        cl = QVBoxLayout(card); cl.setSpacing(6)
+        cl.addWidget(panel_title("Custos fixos & overhead"))
+
+        for lbl_text, default, hint in [
+            ("Custo fixo mensal total (R$)", "1.500,00", "Aluguel, internet, limpeza…"),
+            ("Horas produtivas por mês",     "480",      None),
+        ]:
+            cl.addWidget(form_label(lbl_text))
+            inp = styled_input(value=default)
+            cl.addWidget(inp)
+            if hint:
+                h = QLabel(hint); h.setObjectName("FooterLabel"); cl.addWidget(h)
+
+        cl.addStretch()
+        cl.addWidget(make_section_label("Overhead por hora: R$ 3,13"))
+        return card
+
+    def _build_markup_card(self) -> QWidget:
+        card = QWidget(); card.setProperty("class", "Card")
+        cl = QVBoxLayout(card); cl.setSpacing(6)
+        cl.addWidget(panel_title("Markup & tributação"))
+
+        for lbl_text, default in [
+            ("Markup padrão sobre custo (%)", "150"),
+            ("ISS — Imposto sobre serviços (%)", "5,00"),
+            ("Simples Nacional (%)", "6,00"),
+        ]:
+            row = QHBoxLayout()
+            lbl = form_label(lbl_text)
+            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            inp = styled_input(value=default)
+            inp.setFixedWidth(90); inp.setAlignment(Qt.AlignRight)
+            row.addWidget(lbl); row.addWidget(inp)
+            cl.addLayout(row)
+
+        cl.addStretch()
+        cl.addWidget(make_section_label("Carga tributária total estimada: 11,0%"))
+        return card
+
+    def _build_print_params_card(self) -> QWidget:
+        card = QWidget(); card.setProperty("class", "Card")
+        cl = QVBoxLayout(card); cl.setSpacing(6)
+        cl.addWidget(panel_title("Parâmetros de impressão"))
+
+        for lbl_text, default in [
+            ("Taxa de falha estimada (%)",    "4,0"),
+            ("Tempo de setup por job (min)",  "15"),
+            ("Desperdício de material (%)",   "3,0"),
+            ("Custo de frete médio (R$)",     "22,00"),
+        ]:
+            row = QHBoxLayout()
+            lbl = form_label(lbl_text)
+            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            inp = styled_input(value=default)
+            inp.setFixedWidth(90); inp.setAlignment(Qt.AlignRight)
+            row.addWidget(lbl); row.addWidget(inp)
+            cl.addLayout(row)
+
+        cl.addStretch()
+        return card
+
+    def _build_maintenance_card(self) -> QWidget:
+        card = QWidget(); card.setProperty("class", "Card")
+        cl = QVBoxLayout(card); cl.setSpacing(6)
+        cl.addWidget(panel_title("Manutenção & peças de reposição"))
+
+        for lbl_text, default in [
+            ("Custo mensal manutenção (R$)",  "80,00"),
+            ("Vida útil do bico (horas)",     "500"),
+            ("Custo por bico (R$)",           "18,00"),
+            ("Troca de cama (meses)",         "6"),
+        ]:
+            row = QHBoxLayout()
+            lbl = form_label(lbl_text)
+            lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            inp = styled_input(value=default)
+            inp.setFixedWidth(90); inp.setAlignment(Qt.AlignRight)
+            row.addWidget(lbl); row.addWidget(inp)
+            cl.addLayout(row)
+
+        cl.addStretch()
+        return card

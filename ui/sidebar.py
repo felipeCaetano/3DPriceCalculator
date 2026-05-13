@@ -20,10 +20,8 @@ class Sidebar(QFrame):
         self.setGraphicsEffect(shadow)
 
         # Header Sidebar
-        title = QLabel("Print3D Manager")
-        title.setObjectName("MenuTitle")
-        subtitle = QLabel("Controle de produção")
-        subtitle.setObjectName("MenuSubtitle")
+        title = QLabel("Print3D Manager", objectName="AppTitle")
+        subtitle = QLabel("Controle de produção", objectName="MenuSubtitle")
         
         sidebar_layout.addWidget(title)
         sidebar_layout.addWidget(subtitle)
@@ -44,12 +42,12 @@ class Sidebar(QFrame):
 
         for text, is_active, icon_path, callback, index in labels:
             if text in ["PRINCIPAL", "ESTOQUE"]:
-                lbl = QLabel(text)
-                lbl.setStyleSheet(
-                    "color: #888780;"
-                    "font-size: 10px;"
-                    " letter-spacing: 1px; font-weight: bold; margin-top: 2px;"
-                )
+                lbl = QLabel(text, objectName="SectionLabel")
+                # lbl.setStyleSheet(
+                #     "color: #888780;"
+                #     "font-size: 10px;"
+                #     " letter-spacing: 1px; font-weight: bold; margin-top: 2px;"
+                # )
                 sidebar_layout.addWidget(lbl)
             elif text == "Divider":
                 sidebar_layout.addWidget(make_divider())
