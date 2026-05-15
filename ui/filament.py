@@ -28,6 +28,34 @@ from models.filament import FilamentData
 from ui.clicklable import ColoredDot
 from ui.stylehelper import form_label
 
+INPUT_HEIGHT = 28
+
+class LayoutMixin:
+    """Utilitário de layout reutilizável."""
+ 
+    @staticmethod
+    def make_layout(
+        layout_cls,
+        margins: tuple[int, int, int, int] = (0, 0, 0, 0),
+        spacing: int = 0,
+        stretch: bool = False,
+    ):
+        lout = layout_cls()
+        lout.setContentsMargins(*margins)
+        lout.setSpacing(spacing)
+        if stretch:
+            lout.addStretch()
+        return lout
+ 
+    @staticmethod
+    def make_labeled_column(label_text: str, widget: QWidget, spacing: int = 4):
+        """Coluna vertical label + widget, padrão recorrente no formulário."""
+        col = QVBoxLayout()
+        col.setSpacing(spacing)
+        col.addWidget(form_label(label_text))
+        col.addWidget(widget)
+        return col
+
 
 class FilamentCard(QFrame):
     """Card de visualização de um FilamentData."""
@@ -131,61 +159,82 @@ class FilamentCard(QFrame):
         self._update_progressbar_text_color(value)    
 
 
-class FilamentForm(QWidget):
+class FilamentForm(QWidget, LayoutMixin):
     """Formulário lateral para criar ou editar um FilamentData."""
     saved = Signal(object)  # emite o FilamentData salvo
     cancelled = Signal()
 
-    TIPOS = [
+    TIPOS = sorted([
         "PLA", "PETG", "ABS", "TPU", "ASA", "Nylon", "HIPS"
-    ]
-    ACABAMENTOS = [
+    ])
+    ACABAMENTOS = sorted([
         "Hyper Speed", "Matte", "Silk", "Metalizado", "Sólido",
         "Condutivo", "Premium", "Velvet"
-    ]
-    MARCAS = [
+    ])
+    _MARCAS_BASE = sorted([
         "Polymaker", "Bambu", "Hatchbox", "Creality", "Anycubic",
-        "F3D", "Elegoo", "eSUN", "MultiLaser", "Yousu", "Volt3D"
-    ]
+        "F3D", "Elegoo", "eSUN", "MultiLaser", "Yousu", "Volt3D",
+    ])
+    MARCAS = _MARCAS_BASE + ["Outras"]
 
     def __init__(self):
         super().__init__()
         self.setStyleSheet(STYLE_SHEET)
         self._filament: FilamentData | None = None
-        self.setFixedWidth(320)
+        self.setFixedWidth(330)
         self.setObjectName("FilamentForm")
-        root = self._setup_layout(QVBoxLayout, (16,16,16,16), 4)
-        self.setLayout(root)
-        self.form_title = QLabel("Novo filamento")
-        self.form_title.setObjectName("MenuTitle")
+        self._build_widgets()
+        self._build_layout()
+        #self._connect_signals()
+
+    def _build_widgets(self):
+        self.form_title = QLabel("Novo filamento", objectName="MenuTitle")
         self.tipo_combo = styled_combo(sorted(self.TIPOS))
         self.acabamento_combo = styled_combo(sorted(self.ACABAMENTOS))
-        self.MARCAS = sorted(self.MARCAS)
-        self.MARCAS.append("Outras")
         self.marca_combo = styled_combo(self.MARCAS)
         self.cor_input = styled_input("Ex: Azul royal")
         self.cor_hex_input = styled_input("#000000")
         self.pick_btn = ColoredDot()
+        self.pick_btn.handle_data("#000000")
         self.preco_input = styled_input("89,90")
+        self.bobina_input = styled_input("100")
+        self.usado_input = styled_input("0")
         self.quantidade_input = QSpinBox()
-        self.date_opened = QDateEdit(calendarPopup=True)
-        self.date_opened.setFixedHeight(28)
-        self.valid_date = QDateEdit(calendarPopup=True)
-        self.valid_date.setFixedHeight(28)
-        self.cancel_btn = QPushButton("Cancelar")
-        self.save_btn = QPushButton("Salvar")
+        self.quantidade_input.setFixedHeight(INPUT_HEIGHT)
+        self.quantidade_input.setMinimum(1)
+        self.quantidade_input.setSuffix(' Bobinas')
+        self.date_opened = self._make_date_edit()
+        self.valid_date = self._make_date_edit()
+        self.cancel_btn = QPushButton("✕  Cancelar", objectName="FilamentCancelButton")
+        self.cancel_btn.setFixedHeight(34)
+        self.save_btn = QPushButton("✔  Salvar", objectName="FilamentSaveButton")
+        self.save_btn.setFixedHeight(34)
+
+    def _build_layout(self):
+        root = self.make_layout(QVBoxLayout, (16,16,16,16), spacing=10)
+        self.setLayout(root)
+        
         root.addWidget(self.form_title)
         root.addWidget(make_divider())
 
-        row1 = self._create_row1_layout()
+        row1 = self.make_layout(QHBoxLayout, spacing=8)
+        for widget, label in (
+            (self.tipo_combo,       "Tipo"),
+            (self.acabamento_combo, "Acabamento"),
+            (self.marca_combo,      "Marca"),
+        ):
+            row1.addLayout(self.make_labeled_column(label, widget))
         root.addLayout(row1)
 
-        root.addWidget(form_label("Nome da cor"))
-        root.addWidget(self.cor_input)
-        color_row = self._create_colorrow_layout()
+        root.addLayout(self.make_labeled_column("Nome da cor", self.cor_input))
+        color_row = self.make_layout(QHBoxLayout, spacing=8)
+        color_row.addWidget(self.pick_btn)
+        color_row.addLayout(self.make_labeled_column("Cor (hex)", self.cor_hex_input))
         root.addLayout(color_row)
 
-        preco_quant_row =self._create_price_stock_layout()
+        preco_quant_row = self.make_layout(QHBoxLayout, spacing=8)
+        preco_quant_row.addLayout(self.make_labeled_column("Preço/kg (R$)", self.preco_input))
+        preco_quant_row.addLayout(self.make_labeled_column("Quantidade", self.quantidade_input))
         root.addLayout(preco_quant_row)
 
         dates_layout = self._setup_date_section()
@@ -198,9 +247,18 @@ class FilamentForm(QWidget):
 
         btn_row = self._create_btn_row()
         root.addLayout(btn_row)
+    
+    @staticmethod
+    def _make_date_edit() -> QDateEdit:
+        d = QDateEdit(calendarPopup=True)
+        d.setDisplayFormat("dd-MM-yyyy")
+        d.setMinimumDate(QDate(2024, 5, 1))
+        d.setDate(QDate.currentDate())
+        d.setFixedHeight(INPUT_HEIGHT)
+        return d
 
     def _create_bobin_weight(self):
-        row2 = self._setup_layout(QHBoxLayout, spacing=8)
+        row2 = self.make_layout(QHBoxLayout, spacing=8)
     
         inputs_config = [
             ("bobina_input", "Peso bobina (g)", "1000"),
@@ -208,7 +266,7 @@ class FilamentForm(QWidget):
         ]
 
         for attr_name, label_text, default_val in inputs_config:
-            column = self._setup_layout(QVBoxLayout, spacing=4)
+            column = self.make_layout(QVBoxLayout, spacing=4)
             column.addWidget(form_label(label_text))
             input_widget = styled_input(default_val)
             setattr(self, attr_name, input_widget)
@@ -217,7 +275,7 @@ class FilamentForm(QWidget):
         return row2
     
     def _create_btn_row(self):
-        btn_row = self._setup_layout(QHBoxLayout, spacing=8)
+        btn_row = self.make_layout(QHBoxLayout, spacing=8)
         self._setup_buttons(self.cancel_btn, "FilamentCancelButton", 32, self.cancelled.emit)
         self._setup_buttons(self.save_btn, "FilamentSaveButton", 32, self._on_save)
         btn_row.addWidget(self.cancel_btn)
@@ -225,8 +283,8 @@ class FilamentForm(QWidget):
         return btn_row
 
     def _create_colorrow_layout(self):
-        cor_row = self._setup_layout(QHBoxLayout, spacing=8)
-        cor_column = self._setup_layout(QVBoxLayout, spacing=4)
+        cor_row = self.make_layout(QHBoxLayout, spacing=8)
+        cor_column = self.make_layout(QVBoxLayout, spacing=4)
         self._setup_coloreddot("#000000", 32, 42, self._pick_color)
         self.cor_hex_input.textChanged.connect(self._on_hex_changed)
         cor_column.addWidget(form_label("Cor (hex)"))
@@ -236,20 +294,20 @@ class FilamentForm(QWidget):
         return cor_row
 
     def _create_price_stock_layout(self):
-        preco_quant_row = self._setup_layout(QHBoxLayout, spacing=2)
-        preco_column = self._setup_layout(QVBoxLayout, spacing=2)
+        preco_quant_row = self.make_layout(QHBoxLayout, spacing=2)
+        preco_column = self.make_layout(QVBoxLayout, spacing=2)
         preco_column.addWidget(form_label("Preço/kg (R$)"))
         preco_column.addWidget(self.preco_input)
         preco_quant_row.addLayout(preco_column)
-        quantidade_column = self._setup_layout(QVBoxLayout, spacing=2)
+        quantidade_column = self.make_layout(QVBoxLayout, spacing=2)
         quantidade_column.addWidget(form_label("Quantidade"))
-        self._setup_spinbox()
+        # self._setup_spinbox()
         quantidade_column.addWidget(self.quantidade_input)
         preco_quant_row.addLayout(quantidade_column)
         return preco_quant_row
 
     def _create_row1_layout(self):
-        row1 = self._setup_layout(QHBoxLayout, spacing=8)
+        row1 = self.make_layout(QHBoxLayout, spacing=8)
         items = [
             (self.tipo_combo, "Tipo"),
             (self.acabamento_combo, "Acabamento"),
@@ -257,7 +315,7 @@ class FilamentForm(QWidget):
         ]
 
         for widget, label_text in items:
-            column = self._setup_layout(QVBoxLayout, spacing=4)
+            column = self.make_layout(QVBoxLayout, spacing=4)
             column.addWidget(form_label(label_text))
             column.addWidget(widget)
             row1.addLayout(column)
@@ -277,7 +335,7 @@ class FilamentForm(QWidget):
 
     def _setup_date_section(self):
         min_date = QDate(2024, 5, 1)
-        dates_layout = self._setup_layout(QHBoxLayout, spacing=8)
+        dates_layout = self.make_layout(QHBoxLayout, spacing=8)
 
         date_fields = [
             (self.date_opened, "Aberto em:"),
@@ -287,41 +345,34 @@ class FilamentForm(QWidget):
         for widget, label_text in date_fields:
             widget.setDisplayFormat("dd-MM-yyyy")
             widget.setMinimumDate(min_date)
-            column = self._setup_layout(QVBoxLayout, spacing=4)
+            column = self.make_layout(QVBoxLayout, spacing=4)
             column.addWidget(form_label(label_text))
             column.addWidget(widget)
             dates_layout.addLayout(column)
         return dates_layout
         
-    def _setup_layout(
-        self, layout, margins=(0, 0, 0, 0), spacing=0, addstretch=False):
-        lout = layout()
-        lout.setContentsMargins(*margins)
-        lout.setSpacing(spacing)
-        if addstretch:
-            lout.addStretch()
-        return lout
-    
-    def _setup_spinbox(self):
-        self.quantidade_input.setFixedHeight(28)
-        self.quantidade_input.setMinimum(1)
-        self.quantidade_input.setSuffix(' Bobinas')
-
     def _populate_form(self, filament):
-        if filament:
-            self.form_title.setText("Editar filamento")
-            self.tipo_combo.setCurrentText(filament.tipo)
-            self.marca_combo.setCurrentText(filament.marca)
-            self.cor_input.setText(filament.cor)
-            self.cor_hex_input.setText(filament.cor_str)
-            self.preco_input.setText(
-                f"{filament.preco_kg:.2f}".replace(".", ","))
-            self.quantidade_input.setValue(filament.quantidade)
-            self.bobina_input.setText(str(int(filament.peso_bobina_g)))
-            self.usado_input.setText(str(int(filament.peso_usado_g)))
-        else:
+        if filament is None:
             self._clear()
-           
+            return
+
+        self.form_title.setText("Editar filamento")
+        self.tipo_combo.setCurrentText(filament.tipo)
+        self.marca_combo.setCurrentText(filament.marca)
+        self.acabamento_combo.setCurrentText(filament.acabamento) 
+        self.cor_input.setText(filament.cor)
+        self.cor_hex_input.setText(filament.cor_str)
+        self.preco_input.setText(
+            f"{filament.preco_kg:.2f}".replace(".", ","))
+        self.quantidade_input.setValue(filament.quantidade)
+        self.bobina_input.setText(str(int(filament.peso_bobina_g)))
+        self.usado_input.setText(str(int(filament.peso_usado_g)))
+        if filament.dat_abertura:
+            self.date_opened.setDate(
+                QDate.fromString(filament.dat_abertura, "dd/MM/yyyy"))
+        if filament.data_validade:
+            self.valid_date.setDate(
+                QDate.fromString(filament.data_validade, "dd/MM/yyyy"))    
 
     def load(self, filament: FilamentData | None):
         """Popula o formulário. None = novo filamento."""
@@ -353,7 +404,7 @@ class FilamentForm(QWidget):
             bobina = float(self.bobina_input.text().replace(",", "."))
             usado = float(self.usado_input.text().replace(",", "."))
         except ValueError:
-            self._show_worning(
+            self._show_warning(
                 "Valor inválido",
                 "Preço, peso da bobina e peso usado devem ser numéricos.")
             return
@@ -365,7 +416,7 @@ class FilamentForm(QWidget):
         self._clear()
         self.saved.emit(filamento)
     
-    def _show_worning(self, title):
+    def _show_warning(self, title, message):
         StyledMessageBox.warning(self, title, message)
 
     def _set_filament_data(self, preco, bobina, usado):
@@ -433,14 +484,13 @@ class FilamentCardRow(QWidget):
         root.addLayout(btn_col)
 
 
-class FilamentPageWidget(QWidget):
+class FilamentPageWidget(QWidget, LayoutMixin):
     """Página que mostra os filamentos disponíveis e permite ações sobre eles"""
 
     def __init__(self):
         super().__init__()
         self._filaments: list[FilamentData] = []
-        self._cards: list[FilamentCard] = []
-        
+        self._rows: list[FilamentCardRow] = []
         self._init_compontents()
         self._setup_styles()
         self._mount_layouts()
@@ -464,7 +514,7 @@ class FilamentPageWidget(QWidget):
         self.form.hide()
     
     def _mount_layouts(self):
-        root_layout = self._setup_layout(QHBoxLayout)
+        root_layout = self.make_layout(QHBoxLayout)
         self.setLayout(root_layout)
         left = self._setup_layout(QVBoxLayout)
         topbar = self._set_topbar("FilamentTopBar", 56)
@@ -525,19 +575,22 @@ class FilamentPageWidget(QWidget):
         return topbar
 
     def _rebuild_list(self):
-        """Reconstrói todos os cards a partir de self._filaments."""
-        for card in self._cards:
-            self.list_layout.removeWidget(card)
-            card.deleteLater()
-        self._cards.clear()
-        self.empty_lbl.setVisible(len(self._filaments) == 0)
-
+        """Remove widgets antigos e insere os novos sem recriar o layout."""
+        for row in self._rows:
+            self.list_layout.removeWidget(row)
+            row.deleteLater()
+        self._rows.clear()
+ 
+        has_items = bool(self._filaments)
+        self.empty_lbl.setVisible(not has_items)
+        insert_pos = self.list_layout.count() - 1
         for f in self._filaments:
             row = FilamentCardRow(f)
             row.edit_requested.connect(self._on_edit)
             row.delete_requested.connect(self._on_delete)
-            self.list_layout.insertWidget(self.list_layout.count() - 1, row)
-            self._cards.append(row)
+            self.list_layout.insertWidget(insert_pos, row)
+            insert_pos += 1
+            self._rows.append(row)
 
     def _on_new(self):
         if self.form.isHidden():

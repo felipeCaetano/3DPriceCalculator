@@ -27,18 +27,18 @@ class CostCard(QFrame):
         }
         
         details = [
-            ("Material", "R$ 4,32"),
-            ("Energia", "R$ 1,17"),
-            ("Mão de Obra", "R$ 2,00"),
-            ("Adicionais", "R$ 2,00"),
-            ("Embalagem", "R$ 2,00")
+            ("Material:", "R$ 4,32"),
+            ("Energia:", "R$ 1,17"),
+            ("Mão de Obra:", "R$ 2,00"),
+            ("Adicionais:", "R$ 2,00"),
+            ("Embalagem:", "R$ 2,00")
         ]
         for desc, val in details:
             d_lay = QHBoxLayout()
             d_lay.addWidget(QLabel(desc, objectName="SectionLabel"))
             d_lay.addStretch()
             
-            target_label = self.labels_map.get(desc)
+            target_label = self.labels_map.get(desc[:-1])
             if target_label:
                 target_label.setText(val)
                 d_lay.addWidget(target_label)
@@ -47,9 +47,8 @@ class CostCard(QFrame):
         cost_lay.addSpacing(4)
         cost_lay.addWidget(make_divider())
         total_lay = QHBoxLayout()
-        total_lbl = QLabel("Custo total", objectName="HighlightValue")
-        #total_lbl.setStyleSheet("font-weight: bold; background: transparent;")
-        total_val = QLabel("R$ 7,49")
+        total_lbl = QLabel("Custo Total:", objectName="HighlightValue")
+        total_val = QLabel("R$ 7,49", objectName="HighlightValue")
         total_val.setStyleSheet("font-weight: bold; background: transparent;")
         total_lay.addWidget(total_lbl); total_lay.addStretch(); total_lay.addWidget(total_val)
         cost_lay.addLayout(total_lay)
@@ -64,7 +63,6 @@ class DashBoard(QWidget):
     # Header com Botões
         self.header_layout = QHBoxLayout()
         self.header_title = QLabel("Nova peça — precificação", objectName="MenuTitle")
-        # self.header_title.setStyleSheet("font-size: 20px; font-weight: 500; color: #2C2C2A;")
     
         self.btn_cancel = QPushButton("Cancelar")
         self.btn_cancel.setObjectName("PrimaryButton")
