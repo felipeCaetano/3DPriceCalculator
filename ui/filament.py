@@ -30,6 +30,53 @@ from ui.stylehelper import form_label
 
 INPUT_HEIGHT = 28
 
+class _T:
+    """Paleta e métricas compartilhadas entre os widgets."""
+    # Cores base
+    BG         = "#F5F4F0"
+    SURFACE    = "#FFFFFF"
+    BORDER     = "#E2E0DA"
+    TEXT       = "#1A1A1A"
+    MUTED      = "#6B6860"
+ 
+    # Ação primária (azul)
+    PRIMARY    = "#185FA5"
+    PRIMARY_BG = "#E6F1FB"
+    PRIMARY_HV = "#B5D4F4"
+ 
+    # Ação destrutiva (vermelho)
+    DANGER     = "#993C1D"
+    DANGER_BG  = "#FAECE7"
+    DANGER_HV  = "#F5C6B0"
+ 
+    # Medidas
+    RADIUS     = "8px"
+    FONT_SM    = "11px"
+    FONT_MD    = "12px"
+    BTN_H      = 30
+    INPUT_H    = 28
+    
+
+_EDIT_BTN_STYLE = f"""
+    QPushButton {{
+        background: {_T.PRIMARY_BG}; color: {_T.PRIMARY};
+        border: none; border-radius: {_T.RADIUS}; font-size: {_T.FONT_MD};
+        font-weight: 600;
+    }}
+    QPushButton:hover {{ background: {_T.PRIMARY_HV}; }}
+    QPushButton:pressed {{ background: #8EC0EE; }}
+"""
+ 
+_DELETE_BTN_STYLE = f"""
+    QPushButton {{
+        background: {_T.DANGER_BG}; color: {_T.DANGER};
+        border: none; border-radius: {_T.RADIUS}; font-size: {_T.FONT_MD};
+        font-weight: 600;
+    }}
+    QPushButton:hover {{ background: {_T.DANGER_HV}; }}
+    QPushButton:pressed {{ background: #EDA07A; }}
+"""
+
 class LayoutMixin:
     """Utilitário de layout reutilizável."""
  
@@ -154,7 +201,7 @@ class FilamentCard(QFrame):
         )
         self.filament_color.handle_data(self.filament.cor_str or "#888780")
         value = self.filament.bobina_restante_pct
-        self.data_validade.setDate(QDate.currentDate())
+        self.filament_data_validade.setText(str(QDate.currentDate()))
         self.progress_bar.setValue(value)
         self._update_progressbar_text_color(value)    
 
@@ -185,7 +232,7 @@ class FilamentForm(QWidget, LayoutMixin):
         self.setObjectName("FilamentForm")
         self._build_widgets()
         self._build_layout()
-        #self._connect_signals()
+        self._connect_signals()
 
     def _build_widgets(self):
         self.form_title = QLabel("Novo filamento", objectName="MenuTitle")
@@ -196,6 +243,7 @@ class FilamentForm(QWidget, LayoutMixin):
         self.cor_hex_input = styled_input("#000000")
         self.pick_btn = ColoredDot()
         self.pick_btn.handle_data("#000000")
+        self.pick_btn.setFixedSize(32, INPUT_HEIGHT + 4)
         self.preco_input = styled_input("89,90")
         self.bobina_input = styled_input("100")
         self.usado_input = styled_input("0")
@@ -227,26 +275,44 @@ class FilamentForm(QWidget, LayoutMixin):
         root.addLayout(row1)
 
         root.addLayout(self.make_labeled_column("Nome da cor", self.cor_input))
-        color_row = self.make_layout(QHBoxLayout, spacing=8)
-        color_row.addWidget(self.pick_btn)
-        color_row.addLayout(self.make_labeled_column("Cor (hex)", self.cor_hex_input))
-        root.addLayout(color_row)
+        cor_row = self.make_layout(QHBoxLayout, spacing=4)
+        cor_row.addWidget(self.pick_btn)
+        cor_row.addLayout(self.make_labeled_column("Cor (hex)", self.cor_hex_input))
+        root.addLayout(cor_row)
 
         preco_quant_row = self.make_layout(QHBoxLayout, spacing=8)
         preco_quant_row.addLayout(self.make_labeled_column("Preço/kg (R$)", self.preco_input))
         preco_quant_row.addLayout(self.make_labeled_column("Quantidade", self.quantidade_input))
         root.addLayout(preco_quant_row)
 
-        dates_layout = self._setup_date_section()
-        root.addLayout(dates_layout)
+        date_row = self.make_layout(QHBoxLayout, spacing=8)
+        for widget, label in (
+            (self.date_opened, "Aberto em"),
+            (self.valid_date,  "Válido até"),
+        ):
+            date_row.addLayout(self.make_labeled_column(label, widget))
+        root.addLayout(date_row)
 
-        row2 = self._create_bobin_weight()
-        root.addLayout(row2)
+        # Pesos
+        weight_row = self.make_layout(QHBoxLayout, spacing=8)
+        weight_row.addLayout(self.make_labeled_column("Peso bobina (g)", self.bobina_input))
+        weight_row.addLayout(self.make_labeled_column("Já usado (g)",    self.usado_input))
+        root.addLayout(weight_row)
+ 
         root.addStretch()
         root.addWidget(make_divider())
-
-        btn_row = self._create_btn_row()
+ 
+        # Botões
+        btn_row = self.make_layout(QHBoxLayout, spacing=8)
+        btn_row.addWidget(self.cancel_btn)
+        btn_row.addWidget(self.save_btn)
         root.addLayout(btn_row)
+ 
+    def _connect_signals(self):
+        self.cancel_btn.clicked.connect(self.cancelled.emit)
+        self.save_btn.clicked.connect(self._on_save)
+        self.pick_btn.clicked.connect(self._pick_color)
+        self.cor_hex_input.textChanged.connect(self._on_hex_changed)
     
     @staticmethod
     def _make_date_edit() -> QDateEdit:
@@ -256,100 +322,6 @@ class FilamentForm(QWidget, LayoutMixin):
         d.setDate(QDate.currentDate())
         d.setFixedHeight(INPUT_HEIGHT)
         return d
-
-    def _create_bobin_weight(self):
-        row2 = self.make_layout(QHBoxLayout, spacing=8)
-    
-        inputs_config = [
-            ("bobina_input", "Peso bobina (g)", "1000"),
-            ("usado_input", "Já usado (g)", "0")
-        ]
-
-        for attr_name, label_text, default_val in inputs_config:
-            column = self.make_layout(QVBoxLayout, spacing=4)
-            column.addWidget(form_label(label_text))
-            input_widget = styled_input(default_val)
-            setattr(self, attr_name, input_widget)
-            column.addWidget(input_widget)
-            row2.addLayout(column)
-        return row2
-    
-    def _create_btn_row(self):
-        btn_row = self.make_layout(QHBoxLayout, spacing=8)
-        self._setup_buttons(self.cancel_btn, "FilamentCancelButton", 32, self.cancelled.emit)
-        self._setup_buttons(self.save_btn, "FilamentSaveButton", 32, self._on_save)
-        btn_row.addWidget(self.cancel_btn)
-        btn_row.addWidget(self.save_btn)
-        return btn_row
-
-    def _create_colorrow_layout(self):
-        cor_row = self.make_layout(QHBoxLayout, spacing=8)
-        cor_column = self.make_layout(QVBoxLayout, spacing=4)
-        self._setup_coloreddot("#000000", 32, 42, self._pick_color)
-        self.cor_hex_input.textChanged.connect(self._on_hex_changed)
-        cor_column.addWidget(form_label("Cor (hex)"))
-        cor_column.addWidget(self.cor_hex_input)
-        cor_row.addWidget(self.pick_btn)
-        cor_row.addLayout(cor_column)
-        return cor_row
-
-    def _create_price_stock_layout(self):
-        preco_quant_row = self.make_layout(QHBoxLayout, spacing=2)
-        preco_column = self.make_layout(QVBoxLayout, spacing=2)
-        preco_column.addWidget(form_label("Preço/kg (R$)"))
-        preco_column.addWidget(self.preco_input)
-        preco_quant_row.addLayout(preco_column)
-        quantidade_column = self.make_layout(QVBoxLayout, spacing=2)
-        quantidade_column.addWidget(form_label("Quantidade"))
-        # self._setup_spinbox()
-        quantidade_column.addWidget(self.quantidade_input)
-        preco_quant_row.addLayout(quantidade_column)
-        return preco_quant_row
-
-    def _create_row1_layout(self):
-        row1 = self.make_layout(QHBoxLayout, spacing=8)
-        items = [
-            (self.tipo_combo, "Tipo"),
-            (self.acabamento_combo, "Acabamento"),
-            (self.marca_combo, "Marca")
-        ]
-
-        for widget, label_text in items:
-            column = self.make_layout(QVBoxLayout, spacing=4)
-            column.addWidget(form_label(label_text))
-            column.addWidget(widget)
-            row1.addLayout(column)
-        return row1
-
-    def _setup_buttons(self, button, objectname: str=None, height:int=24, callback=None):
-        if objectname:
-            button.setObjectName(objectname)
-        button.setFixedHeight(height)
-        if callback:
-            button.clicked.connect(callback)
-
-    def _setup_coloreddot(self, color, width, height, callback):
-        self.pick_btn.handle_data(color)
-        self.pick_btn.setFixedSize(width, height)
-        self.pick_btn.clicked.connect(callback)
-
-    def _setup_date_section(self):
-        min_date = QDate(2024, 5, 1)
-        dates_layout = self.make_layout(QHBoxLayout, spacing=8)
-
-        date_fields = [
-            (self.date_opened, "Aberto em:"),
-            (self.valid_date, "Válido até:")
-        ]
-
-        for widget, label_text in date_fields:
-            widget.setDisplayFormat("dd-MM-yyyy")
-            widget.setMinimumDate(min_date)
-            column = self.make_layout(QVBoxLayout, spacing=4)
-            column.addWidget(form_label(label_text))
-            column.addWidget(widget)
-            dates_layout.addLayout(column)
-        return dates_layout
         
     def _populate_form(self, filament):
         if filament is None:
@@ -437,51 +409,42 @@ class FilamentForm(QWidget, LayoutMixin):
 class FilamentCardRow(QWidget):
     edit_requested   = Signal(object)
     delete_requested = Signal(object)
-
+ 
+    _BTN_W, _BTN_H = 88, _T.BTN_H
+ 
     def __init__(self, filamento: FilamentData):
         super().__init__()
         self.filament = filamento
-
+ 
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(8)
         root.setAlignment(Qt.AlignVCenter)
-
-        self.card = FilamentCard(filamento)
-        root.addWidget(self.card, stretch=1)
-
-        self.edit_btn = QPushButton("✎ Editar")
-        self.edit_btn.setFixedSize(80, 30)
-        self.edit_btn.setStyleSheet("""
-            QPushButton {
-                background: #E6F1FB; color: #185FA5;
-                border: none; border-radius: 6px; font-size: 12px;
-            }
-            QPushButton:hover { background: #B5D4F4; }
-        """)
-
-        self.delete_btn = QPushButton("✕ Deletar")
-        self.delete_btn.setFixedSize(80, 30)
-        self.delete_btn.setStyleSheet("""
-            QPushButton {
-                background: #FAECE7; color: #993C1D;
-                border: none; border-radius: 6px; font-size: 12px;
-            }
-            QPushButton:hover { background: #F5C6B0; }
-        """)
-
+ 
+        card = FilamentCard(filamento)
+        root.addWidget(card, stretch=1)
+ 
+        # Botões — estilos movidos para constantes de módulo
+        self.edit_btn   = self._make_button("✎  Editar",  _EDIT_BTN_STYLE)
+        self.delete_btn = self._make_button("✕  Deletar", _DELETE_BTN_STYLE)
+ 
         self.edit_btn.clicked.connect(
-            lambda: self.edit_requested.emit(self.filament)
-        )
+            lambda: self.edit_requested.emit(self.filament))
         self.delete_btn.clicked.connect(
-            lambda: self.delete_requested.emit(self.filament)
-        )
+            lambda: self.delete_requested.emit(self.filament))
+ 
         btn_col = QVBoxLayout()
         btn_col.setSpacing(6)
-        btn_col.setAlignment(Qt.AlignVCenter)  # centraliza no eixo vertical
+        btn_col.setAlignment(Qt.AlignVCenter)
         btn_col.addWidget(self.edit_btn)
         btn_col.addWidget(self.delete_btn)
         root.addLayout(btn_col)
+ 
+    def _make_button(self, text: str, style: str) -> QPushButton:
+        btn = QPushButton(text)
+        btn.setFixedSize(self._BTN_W, self._BTN_H)
+        btn.setStyleSheet(style)
+        return btn
 
 
 class FilamentPageWidget(QWidget, LayoutMixin):

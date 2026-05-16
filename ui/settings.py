@@ -51,7 +51,7 @@ class SettingsWidget(QWidget):
         self._build_inputs_tab(ins_tab)
         self._build_params_tab(params_tab)
 
-        tabs.addTab(mach_tab,   "  Máquinas  ")
+        tabs.addTab(mach_tab,   "                                    Máquinas  ")
         tabs.addTab(energy_tab, "  Energia  ")
         tabs.addTab(work_tab,   "  Mão de obra  ")
         tabs.addTab(ins_tab,    "  Insumos  ")
