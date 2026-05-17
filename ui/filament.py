@@ -201,7 +201,7 @@ class FilamentCard(QFrame):
         )
         self.filament_color.handle_data(self.filament.cor_str or "#888780")
         value = self.filament.bobina_restante_pct
-        self.filament_data_validade.setText(str(QDate.currentDate()))
+        self.filament_data_validade.setText(self.filament.data_validade)
         self.progress_bar.setValue(value)
         self._update_progressbar_text_color(value)    
 
@@ -267,9 +267,9 @@ class FilamentForm(QWidget, LayoutMixin):
 
         row1 = self.make_layout(QHBoxLayout, spacing=8)
         for widget, label in (
-            (self.tipo_combo,       "Tipo"),
+            (self.tipo_combo, "Tipo"),
             (self.acabamento_combo, "Acabamento"),
-            (self.marca_combo,      "Marca"),
+            (self.marca_combo, "Marca"),
         ):
             row1.addLayout(self.make_labeled_column(label, widget))
         root.addLayout(row1)
@@ -466,6 +466,7 @@ class FilamentPageWidget(QWidget, LayoutMixin):
 
     def _init_compontents(self):
         self.add_btn = QPushButton("+ Novo filamento")
+        self.add_btn.setObjectName("PrimaryButton")
         self.edit_btn = QPushButton("Editar")
         self.delete_btn = QPushButton("Deletar")
         self.list_container = QWidget()

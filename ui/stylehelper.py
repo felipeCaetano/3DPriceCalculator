@@ -150,11 +150,11 @@ QPushButton#GhostButton:hover {{
 QPushButton#AddBtn {{
     background-color: {C_BLUE};
     color: white;
-    border: none;
+    border: 1px solid {C_BORDER2};
     border-radius: 6px;
     padding: 5px 12px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
 }}
 QPushButton#AddBtn:hover {{
     background-color: {C_BLUE_TEXT};
@@ -258,6 +258,43 @@ QLineEdit:focus {{
 QLineEdit:disabled {{
     background-color: #f5f3ee;
     color: {C_TEXT4};
+}}
+
+/* ------QDoubleSpinBox -------*/
+QSpinBox {{
+    background-color: {C_SURFACE};
+    border: 1px solid {C_BORDER2};
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 14px;
+    color: {C_TEXT};
+    selection-background-color: {C_BLUE_LIGHT};
+}}
+QSpinBox:focus {{
+    border: 1px solid #93c5fd;
+    outline: none;
+}}
+QSpinBox::down-arrow {{
+    width: 14px;
+    height: 14px;
+}}
+
+QDoubleSpinBox {{
+    background-color: {C_SURFACE};
+    border: 1px solid {C_BORDER2};
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 14px;
+    color: {C_TEXT};
+    selection-background-color: {C_BLUE_LIGHT};
+}}
+QDoubleSpinBox:focus {{
+    border: 1px solid #93c5fd;
+    outline: none;
+}}
+QDoubleSpinBox::down-arrow {{
+    width: 10px;
+    height: 10px;
 }}
 
 /* ── QComboBox ────────────────────────────────── */

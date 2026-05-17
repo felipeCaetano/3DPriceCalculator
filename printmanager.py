@@ -42,6 +42,7 @@ class Print3DManager(QMainWindow):
    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyleSheet(STYLE_SHEET)
     window = Print3DManager()
     window.show()
     sys.exit(app.exec())
